@@ -66,17 +66,17 @@ while running:
                 get_tile()
                 
     if playerX >= CAMERA_EDGE_X:
-        playerX -= 32
-        world.update_layout(-32,0)
+        playerX -= TILE_SIZE
+        world.update_layout(-TILE_SIZE,0)
     if playerX  <= LENGTH - CAMERA_EDGE_X:
-        playerX += 32
-        world.update_layout(32,0)
+        playerX += TILE_SIZE
+        world.update_layout(TILE_SIZE,0)
     if playerY >= CAMERA_EDGE_Y:
-        playerY -= 32
-        world.update_layout(0,32)
+        playerY -= TILE_SIZE
+        world.update_layout(0,TILE_SIZE)
     if playerY <= WIDTH - CAMERA_EDGE_Y:
-        playerY += 32
-        world.update_layout(0,-32)
+        playerY += TILE_SIZE
+        world.update_layout(0,-TILE_SIZE)
 
 
     screen.fill('black')
