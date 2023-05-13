@@ -14,20 +14,22 @@ class world_creator: #constructs the world
         for row_index, row in enumerate(l):
             for column_index, col in enumerate(row):
                 if col != '-1':
-                    x = column_index * 32
-                    y = row_index * 32
+                    x = (column_index - 40) * 32 #shifts the board to the middle x
+                    y = (row_index - 18) * 32
           
 
                     if t == 'plain':
-                        print('typefound')
-                        texture = 'Sprites/grass.png'
-                        sprite = Tile(32,x,y)
-                        #sprite = StaticTile(32,x,y,texture)
+                        texture = pygame.image.load('Sprites/grass.png')
+                        #sprite = Tile(32,x,y)
+                        sprite = StaticTile(32,x,y,texture)
                         sprite_group.add(sprite) #java conversion: creates a plain object with x and y coords, stores it in an 2d array :)
         return sprite_group
 
-
+    
     def run(self):
         self.layout_sprite.draw(self.display_surface) #draws the tile group on said surface
-        self.layout_sprite.update(1)
+        #self.layout_sprite.update(1)
         pass
+    
+    def update_layout(self,x,y):
+       self.layout_sprite.update(x,y)
