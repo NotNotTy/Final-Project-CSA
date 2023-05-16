@@ -23,8 +23,8 @@ CAMERA_EDGE_X = 1120 #the edges are where the world will start to shift to give 
 CAMERA_EDGE_Y = 576
 START_COORDSX = 640 #start coordinates, used to keep the original position in a constant
 START_COORDSY = 352
-NPC_STARTCOORDSX = 672
-NPC_STARTCOORDSY = 384
+NPC_STARTCOORDSX = 416
+NPC_STARTCOORDSY = 160
 TEXTBOX_COORDSX = 100
 TEXTBOX_COORDSY = 100
 playerX = START_COORDSX #playerX and playerY are coordinates relative to the screen. These coords are used for the physical posiiton of the player on the screen
@@ -33,14 +33,15 @@ playerXRelative = playerX #playerXRelative and playerYRelative are coordinates r
 playerYRelative = playerY
 player1 = Player(32,START_COORDSX,START_COORDSY,playerImg)
 npc1 = NPC(32,NPC_STARTCOORDSX,NPC_STARTCOORDSY,npcImg,'npc',False)
+npc2 = NPC(32,896,160,npcImg,'npc',False)
 textbox1 = textbox(32,TEXTBOX_COORDSX,TEXTBOX_COORDSY,textboxImg,'textbox',False)
 text = TextGenerator(playerXRelative,playerYRelative - 64,'press E to interact','freesansbold.ttf')
 all_sprites_list = pygame.sprite.Group()
 npc_sprite_list = pygame.sprite.Group()
 textbox_sprite_list = pygame.sprite.Group()
 all_sprites_list.add(player1)
-all_sprites_list.add(npc1)
-npc_sprite_list.add(npc1)
+all_sprites_list.add(npc1,npc2)
+npc_sprite_list.add(npc1,npc2)
 textbox_sprite_list.add(textbox1)
 running = True
 
@@ -58,6 +59,7 @@ def player(): #draws the player
 def get_tile(): #returns the coordinate position of the player
     coords = [(playerXRelative - START_COORDSX)//TILE_SIZE,(playerYRelative-START_COORDSY)//TILE_SIZE]
     #print(playerXRelative//TILE_SIZE,playerYRelative//TILE_SIZE)
+    print(playerXRelative,playerYRelative)
     print(coords)
 
 def collision():
@@ -116,16 +118,25 @@ while running:
                 #collision()
 
             #textbox logic
-            if key_pressed[K_e]:
-                for row in enumerate(npc_sprite_list):
-                    if row[1].getRange():
-                        textbox1.updateStatus(True) #figure out a work around for this later
+            #if key_pressed[K_e]:
+                #for row in enumerate(npc_sprite_list):
+                    #if row[1].getRange():
+                        #textbox1.updateStatus(True) #figure out a work around for this later
             
 
     #once we are out of range, also figure out a work around if the scenerio of multiple textboxes
     for row in enumerate(npc_sprite_list):
-        if row[1].getRange() != True:
-            textbox1.updateStatus(False)
+        if row[1].getRange() == True: #if we are in range of a npc
+            if key_pressed[K_e]: #if the interact key is pressed
+                for row in enumerate(npc_sprite_list):
+                    if row[1].getRange(): #find the curernt npc thats being interacted with 
+                        textbox1.updateStatus(True) #update the box to show
+            break #dont go to other conditional after
+        else: 
+            textbox1.updateStatus(False) #textbox defaults off
+
+        
+    
 
     #camera logic
     if player1.getX() >= CAMERA_EDGE_X:
