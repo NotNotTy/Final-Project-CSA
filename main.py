@@ -7,59 +7,65 @@ from game_data import data
 from npc import NPC
 from textbox import textbox
 from textGenerator import TextGenerator
+from Inventory import Inventory
 pygame.init()
 pygame.font.init()
-LENGTH = 1280
+LENGTH = 1216
 WIDTH = 704
 screen = pygame.display.set_mode((LENGTH,WIDTH)) #a single tile is 32 by 32, entire map is 60x60 tiles
-playerImg = pygame.image.load("Sprites/playertemp.png") #fill this
-npcImg = pygame.image.load("Sprites/playertemp.png")
-textboxImg = pygame.image.load("Sprites/textbox.png")
-world = world_creator(data,screen) #generates the world 
+playerImg = pygame.image.load("Sprites/character64.png") #fill this
+npcImg = pygame.image.load("Sprites/character64.png")
+textboxImg = pygame.image.load("Sprites/textbox2.png")
 clock = pygame.time.Clock() #clock
-TILE_SIZE = 32 #each tile is 32x32 big
+TILE_SIZE = 64 #each tile is 32x32 big
 FPS = 60 #pretty self explainitory
-CAMERA_EDGE_X = 1120 #the edges are where the world will start to shift to give the impression that the camera is following the player
-CAMERA_EDGE_Y = 576
-START_COORDSX = 640 #start coordinates, used to keep the original position in a constant
-START_COORDSY = 352
-NPC_STARTCOORDSX = 416
-NPC_STARTCOORDSY = 160
+CAMERA_EDGE_X = LENGTH -  (TILE_SIZE * 1) #the edges are where the world will start to shift to give the impression that the camera is following the player. Multipler 8 
+CAMERA_EDGE_Y = WIDTH - (TILE_SIZE * 1) # 4
+START_COORDSX = 512 #start coordinates, used to keep the original position in a constant
+START_COORDSY = 320
+NPC_STARTCOORDSX = 768
+NPC_STARTCOORDSY = 384
 TEXTBOX_COORDSX = 100
 TEXTBOX_COORDSY = 100
-playerX = START_COORDSX #playerX and playerY are coordinates relative to the screen. These coords are used for the physical posiiton of the player on the screen
-playerY = START_COORDSY
-playerXRelative = playerX #playerXRelative and playerYRelative are coordinates relative to the map in the game. These coords are used for in-game position 
-playerYRelative = playerY
-player1 = Player(32,START_COORDSX,START_COORDSY,playerImg)
-npc1 = NPC(32,NPC_STARTCOORDSX,NPC_STARTCOORDSY,npcImg,'npc',False)
-npc2 = NPC(32,896,160,npcImg,'npc',False)
-textbox1 = textbox(32,TEXTBOX_COORDSX,TEXTBOX_COORDSY,textboxImg,'textbox',False)
-text = TextGenerator(playerXRelative,playerYRelative - 64,'press E to interact','freesansbold.ttf')
+SPEED = 4 #speed of the player/world
+TEXTBOX_SPRITE_WIDTH = 576 #used for translating the box in the middle
+world = world_creator(data,screen,START_COORDSX,START_COORDSY) #generates the world 
+player1 = Player(TILE_SIZE,START_COORDSX,START_COORDSY,playerImg)
+npc1 = NPC(TILE_SIZE,NPC_STARTCOORDSX,NPC_STARTCOORDSY,npcImg,'npc',False)
+npc2 = NPC(TILE_SIZE,NPC_STARTCOORDSX + 128,NPC_STARTCOORDSY,npcImg,'npc',False)
+textbox1 = textbox(TILE_SIZE,(LENGTH/2) - (384/2),player1.getY() + 7 * TILE_SIZE,textboxImg,'textbox',False)
+text = TextGenerator(START_COORDSX,START_COORDSY - 64,'press E to interact','freesansbold.ttf')
+inventory = Inventory()
 all_sprites_list = pygame.sprite.Group()
 npc_sprite_list = pygame.sprite.Group()
 textbox_sprite_list = pygame.sprite.Group()
-all_sprites_list.add(player1)
+#all_sprites_list.add(player1)
 all_sprites_list.add(npc1,npc2)
 npc_sprite_list.add(npc1,npc2)
 textbox_sprite_list.add(textbox1)
+velocityX = 0
+velocityY = 0
+direction = 0
+keyUp = False
 running = True
 
 
 
 
-def player(): #draws the player
-    #player1 = pygame.Rect(playerX,playerY,playerX, playerY)
-    #screen.blit(playerImg,player1)
-    all_sprites_list.draw(screen)
 
+
+#def updateSmooth():
+    #player1.update(2,0)
+    #all_sprites_list.draw(screen)
+    
+    #pygame.time.delay(500)
 
 
 
 def get_tile(): #returns the coordinate position of the player
-    coords = [(playerXRelative - START_COORDSX)//TILE_SIZE,(playerYRelative-START_COORDSY)//TILE_SIZE]
+    coords = [(player1.getRelativeX() - START_COORDSX)//TILE_SIZE,(player1.getRelativeY()-START_COORDSY)//TILE_SIZE]
     #print(playerXRelative//TILE_SIZE,playerYRelative//TILE_SIZE)
-    print(playerXRelative,playerYRelative)
+    #print(playerXRelative,playerYRelative)
     print(coords)
 
 def collision():
@@ -72,6 +78,7 @@ def collision():
 def interactable():
     for row in enumerate(npc_sprite_list):
          if pygame.sprite.collide_rect(player1, row[1]):
+            text.updateRect(player1.getX(),player1.getY()-64)
             screen.blit(text.getText(),text.getTextRect())
             row[1].editRange(True)
             #print(row[1].getRange())
@@ -80,11 +87,57 @@ def interactable():
              #print(row[1].getRange())
 
 
+def player(): #draws the player
+    global direction
+    global velocityX #the speed of the player dictated by input
+    global velocityY #the speed of the player dictated by input
+    global keyUp #if we let go of the movement keys
+    player1.updateRelative(velocityX,velocityY) #here just to keep track of the player, is basically the asme thing as worldrelative
+    world.updateRelative(velocityX,velocityY) #takes in user input and moves when held
+    world.update_layout(-velocityX,velocityY) #takes in user input and moves when held
+    all_sprites_list.update(-velocityX,-velocityY)#keep moving at speed until we are tile
+    if ((world.getRelativeX() % TILE_SIZE) != 0 and keyUp): #if we are not on a tile and we are not holding a key, reajust to a tile
+        velocityX = 0 #reset velocity to avoid extra inputs
+        world.update_layout(-SPEED  * direction,0) #keep moving at speed until we are on a tile
+        world.updateRelative(SPEED * direction,0) #keep moving at speed until we are tile
+        player1.updateRelative(SPEED * direction,0)
+        all_sprites_list.update(-SPEED  * direction,0)#keep moving at speed until we are tile
+    elif ((world.getRelativeY() % TILE_SIZE) != 0 and keyUp): #if we are not on a tile and we are not holding a key, reajust to a tile
+        velocityY = 0  #reset velocity to avoid extra inputs
+        world.update_layout(0,SPEED  * direction) #keep moving at speed until we are on a tile
+        world.updateRelative(0,SPEED * direction) #keep moving at speed until we are on a tile
+        player1.updateRelative(0,SPEED * direction)
+        all_sprites_list.update(0,-SPEED  * direction) #keep moving at speed until we are on a tile
+
+    else:
+        keyUp = False
+        direction = 0
+    all_sprites_list.draw(screen)
+    player1.render(screen) #seperate player from all_sprites_list
 
 
 
+    
+"""
+def onTile(x):
+    if (player1.getRelativeX() % TILE_SIZE) != 0:
+            if x == 1: #want to take us to the next tile
+                print(player1.getRelativeX() % TILE_SIZE)
+                player1.update((TILE_SIZE - (player1.getRelativeX() % TILE_SIZE)),0)
+            else:
+                player1.update((player1.getRelativeX() % TILE_SIZE) * x,0)
+    elif (player1.getRelativeY() % TILE_SIZE) != 0:
+        if x == 1:
+            player1.update(0,TILE_SIZE - (player1.getRelativeY() % TILE_SIZE))
+        else:
+            player1.update(0,(player1.getRelativeY() % TILE_SIZE) * x)
+"""
+
+            
 
 while running:
+
+
     clock.tick(60)
     #screen.fill((0,0,0))
     for event in pygame.event.get():
@@ -94,28 +147,70 @@ while running:
         if event.type == pygame.KEYDOWN:
             key_pressed = pygame.key.get_pressed()
             if key_pressed[K_d]:
-                player1.update(TILE_SIZE,0) # playerX -= TILE_SIZE
-                playerXRelative += TILE_SIZE
+                velocityX = 4
+                direction = 1
+                keyUp = False
                 get_tile()
-                #collision()
+             
 
             if key_pressed[K_a]:
-                player1.update(-TILE_SIZE,0)#playerX -= TILE_SIZE
-                playerXRelative -= TILE_SIZE
+                velocityX = -4
+                direction = -1
+                keyUp = False
                 get_tile()
-                #collision()
 
             if key_pressed[K_w]:
-                player1.update(0,-TILE_SIZE)#playerY -= TILE_SIZE
-                playerYRelative -= TILE_SIZE
+                velocityY = -4
+                direction = -1
+                keyUp = False
                 get_tile()
-                #collision()
 
             if key_pressed[K_s]:
-                player1.update(0,TILE_SIZE)#playerY += TILE_SIZE
-                playerYRelative += TILE_SIZE
+                velocityY = 4
+                direction = 1
+                keyUp = False
                 get_tile()
+
+            if key_pressed[K_q] and inventory.getStatus() == False:
+                inventory.updateStatus(True)
+            
+            elif key_pressed[K_q] and inventory.getStatus() == True:
+                inventory.updateStatus(False)
+            
+
+        elif event.type == pygame.KEYUP:
+            key_pressed = pygame.key.get_pressed()
+            if event.key == K_d:
+                 velocityX = 0
+                 direction = 1
+                 keyUp = True
+                 #onTile(1)
+                 #collision()
+
+            if event.key == K_a:
+                 velocityX = 0
+                 direction = -1
+                 keyUp = True
+                 #onTile(-1)
+                 #collision()
+
+            if event.key == K_w:
+                 velocityY = 0
+                 direction = -1
+                 keyUp = True
+                 #onTile(-1)
+                 #collision()
+
+            if event.key == K_s:
+                 velocityY = 0
+                 direction = 1
+                 keyUp = True
+                 #onTile(1)
+
+ 
+
                 #collision()
+
 
             #textbox logic
             #if key_pressed[K_e]:
@@ -139,22 +234,28 @@ while running:
     
 
     #camera logic
-    if player1.getX() >= CAMERA_EDGE_X:
+    """""
+    if player1.getRelativeX() >= CAMERA_EDGE_X - TILE_SIZE:
         all_sprites_list.update(-TILE_SIZE,0)#playerX -= TILE_SIZE
         world.update_layout(-TILE_SIZE,0)
-    if player1.getX()  <= LENGTH - CAMERA_EDGE_X:
+    if player1.getRelativeX()  <= LENGTH - CAMERA_EDGE_X:
         all_sprites_list.update(TILE_SIZE,0)#playerX += TILE_SIZE
         world.update_layout(TILE_SIZE,0)
-    if player1.getY() >= CAMERA_EDGE_Y:
+    if player1.getY() >= CAMERA_EDGE_Y - TILE_SIZE:
         all_sprites_list.update(0,-TILE_SIZE)#playerY -= TILE_SIZE
         world.update_layout(0,TILE_SIZE)
     if player1.getY() <= WIDTH - CAMERA_EDGE_Y:
         all_sprites_list.update(0,TILE_SIZE)#playerY += TILE_SIZE
         world.update_layout(0,-TILE_SIZE)
+     """""
 
     
     screen.fill('black')
     world.run(textbox_sprite_list)
     player()
+ 
     collision()
+    #inventory logic
+    if inventory.getStatus():
+        inventory.render(screen)
     pygame.display.update()

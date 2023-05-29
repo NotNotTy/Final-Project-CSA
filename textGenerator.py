@@ -10,6 +10,9 @@ class TextGenerator():
     
     def getText(self):
         return self.text
+
+    def updateRect(self,x,y):
+        self.rect.update(self.text.get_rect(topleft = (x,y)))
     
     def getTextRect(self):
         return self.rect
