@@ -39,7 +39,11 @@ class world_creator: #constructs the world
                         sprite_group.add(sprite)
 
                     if t == 'rock':
-                       texture = pygame.image.load('Sprites/rock64.png')
+                       randomnum = random.randint(0,1)
+                       if randomnum == 0:
+                         texture = pygame.image.load('Sprites/rockdesign1.png')
+                       else:
+                           texture = pygame.image.load('Sprites/rockdesign2.png')
                        sprite = StaticTile(TILE_SIZE,x,y,texture,'rock', (x-576)//TILE_SIZE,(y-320)//TILE_SIZE)
                        sprite_group.add(sprite)
         #for al in sprite_group.sprites():

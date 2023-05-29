@@ -47,6 +47,8 @@ velocityX = 0
 velocityY = 0
 direction = 0
 keyUp = False
+collisionKey = 0
+keyDown = False
 running = True
 
 
@@ -68,17 +70,60 @@ def get_tile(): #returns the coordinate position of the player
     #print(playerXRelative,playerYRelative)
     print(coords)
 
-def collision():
+#manually updates the direction based on the parameters
+def CollisionUpdateDirectionX(r):
+    global direction
+    global velocityX
+    direction = r
+    velocityX = 0 #reset velocity to avoid extra inputs
+    world.update_layout(SPEED  * direction,0) #keep moving at speed until we are on a tile
+    world.updateRelative(-SPEED * direction,0) #keep moving at speed until we are tile
+    player1.updateRelative(-SPEED * direction,0)
+    all_sprites_list.update(SPEED  * direction,0)#keep moving at speed until we are tile
+
+#manually updates the direction based on the parameters
+def CollisionUpdateDirectionY(r):
+    global direction
+    global velocityY
+    velocityY = 0
+    direction = r
+    world.update_layout(0,-SPEED  * direction) #keep moving at speed until we are on a tile
+    world.updateRelative(0,-SPEED * direction) #keep moving at speed until we are on a tile
+    player1.updateRelative(0,-SPEED * direction)
+    all_sprites_list.update(0,SPEED  * direction) #keep moving at speed until we are on a tile
+
+def collision(): #checks if theres a collision
+    global keyDown
+    global direction
+    global collisionKey
     interactable()
     list = world.getObjectList()
     for row_index, row in enumerate(list[1]):
         if pygame.sprite.collide_rect(player1, row):
+            print(collisionKey)
+            if (world.getRelativeX() % TILE_SIZE != 0):
+                if collisionKey == 1: #the D key
+                 CollisionUpdateDirectionX(1)
+                elif collisionKey == 2: #the A key
+                 CollisionUpdateDirectionX(-1)
+            elif (world.getRelativeY() % TILE_SIZE != 0):
+                if collisionKey == 3: #the W key
+                 CollisionUpdateDirectionY(-1)
+                elif collisionKey == 4: #the S key
+                 CollisionUpdateDirectionY(1)
+                
+            #elif (keyDown and world.getRelativeY() % TILE_SIZE != 0)
+            else:
+                collisionKey = 0 #reset everything
+                keyDown = False
+                direction = 0
             print(row.getType())
 
-def interactable():
+
+def interactable(): #loops through every collideable object
     for row in enumerate(npc_sprite_list):
          if pygame.sprite.collide_rect(player1, row[1]):
-            text.updateRect(player1.getX(),player1.getY()-64)
+            text.updateRect(player1.getX(),player1.getY()-TILE_SIZE)
             screen.blit(text.getText(),text.getTextRect())
             row[1].editRange(True)
             #print(row[1].getRange())
@@ -113,7 +158,7 @@ def player(): #draws the player
         keyUp = False
         direction = 0
     all_sprites_list.draw(screen)
-    player1.render(screen) #seperate player from all_sprites_list
+    player1.render(screen) 
 
 
 
@@ -150,6 +195,8 @@ while running:
                 velocityX = 4
                 direction = 1
                 keyUp = False
+                keyDown = True
+                collisionKey = 1
                 get_tile()
              
 
@@ -157,18 +204,24 @@ while running:
                 velocityX = -4
                 direction = -1
                 keyUp = False
+                keyDown = True
+                collisionKey = 2
                 get_tile()
 
             if key_pressed[K_w]:
                 velocityY = -4
                 direction = -1
                 keyUp = False
+                keyDown = True
+                collisionKey = 3
                 get_tile()
 
             if key_pressed[K_s]:
                 velocityY = 4
                 direction = 1
                 keyUp = False
+                keyDown = True
+                collisionKey = 4
                 get_tile()
 
             if key_pressed[K_q] and inventory.getStatus() == False:
@@ -184,6 +237,8 @@ while running:
                  velocityX = 0
                  direction = 1
                  keyUp = True
+                 keyDown = False
+                 #key_d = False
                  #onTile(1)
                  #collision()
 
@@ -191,6 +246,7 @@ while running:
                  velocityX = 0
                  direction = -1
                  keyUp = True
+                 keyDown = False
                  #onTile(-1)
                  #collision()
 
@@ -198,6 +254,7 @@ while running:
                  velocityY = 0
                  direction = -1
                  keyUp = True
+                 keyDown = False
                  #onTile(-1)
                  #collision()
 
@@ -205,6 +262,7 @@ while running:
                  velocityY = 0
                  direction = 1
                  keyUp = True
+                 keyDown = False
                  #onTile(1)
 
  
@@ -219,7 +277,7 @@ while running:
                         #textbox1.updateStatus(True) #figure out a work around for this later
             
 
-    #once we are out of range, also figure out a work around if the scenerio of multiple textboxes
+    #once we are out of range
     for row in enumerate(npc_sprite_list):
         if row[1].getRange() == True: #if we are in range of a npc
             if key_pressed[K_e]: #if the interact key is pressed
@@ -250,11 +308,10 @@ while running:
      """""
 
     
-    screen.fill('black')
+    screen.fill('blue')
     world.run(textbox_sprite_list)
-    player()
- 
     collision()
+    player()
     #inventory logic
     if inventory.getStatus():
         inventory.render(screen)
