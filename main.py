@@ -31,6 +31,7 @@ NPC_STARTCOORDSY = 384
 TEXTBOX_COORDSX = 100
 TEXTBOX_COORDSY = 100
 SPEED = 4 #speed of the player/world
+PROJECTILE_SPEED = 8
 TEXTBOX_SPRITE_WIDTH = 576 #used for translating the box in the middle
 world = world_creator(data,screen,START_COORDSX,START_COORDSY) #generates the world 
 player1 = Player(TILE_SIZE,START_COORDSX,START_COORDSY,playerImg)
@@ -48,7 +49,8 @@ npc_sprite_list.add(npc1,npc2)
 textbox_sprite_list.add(textbox1)
 velocityX = 0
 velocityY = 0
-direction = 0
+direction = 0 #WASD directions
+facingDirection = 2 #where the character is currently facing, either north,south,east,or west. 1 - North, 2 - South, 3 - East, 4 - West
 keyUp = False
 collisionKey = 0
 projectileFired = False
@@ -99,33 +101,46 @@ def CollisionUpdateDirectionY(r):
     player1.updateRelative(0,-SPEED * direction)
     all_sprites_list.update(0,SPEED  * direction) #keep moving at speed until we are on a tile
 
-def collision(): #checks if theres a collision
+def checkCollision(obj): #checks to see if theres a collision with obj and the world
     global keyDown
     global direction
     global collisionKey
     global currentItem
-    interactable()
     list = world.getObjectList()
     for row_index, row in enumerate(list[1]):
-        if pygame.sprite.collide_rect(player1, row):
+        if pygame.sprite.collide_rect(obj, row):
             print(collisionKey)
-            if (world.getRelativeX() % TILE_SIZE != 0):
-                if collisionKey == 1: #the D key
-                 CollisionUpdateDirectionX(1)
-                elif collisionKey == 2: #the A key
-                 CollisionUpdateDirectionX(-1)
-            elif (world.getRelativeY() % TILE_SIZE != 0):
-                if collisionKey == 3: #the W key
-                 CollisionUpdateDirectionY(-1)
-                elif collisionKey == 4: #the S key
-                 CollisionUpdateDirectionY(1)
-                
-            #elif (keyDown and world.getRelativeY() % TILE_SIZE != 0)
+            if (type(obj) == type(player1)):
+                if (world.getRelativeX() % TILE_SIZE != 0):
+                    if collisionKey == 1: #the D key
+                        CollisionUpdateDirectionX(1)
+                    elif collisionKey == 2: #the A key
+                        CollisionUpdateDirectionX(-1)
+                elif (world.getRelativeY() % TILE_SIZE != 0):
+                    if collisionKey == 3: #the W key
+                        CollisionUpdateDirectionY(-1)
+                    elif collisionKey == 4: #the S key
+                        CollisionUpdateDirectionY(1)
+
+                    
+            #elif (keyDown and world.getRelativeY() % TILE_SIZE != 0
+            
             else:
                 collisionKey = 0 #reset everything
                 keyDown = False
                 direction = 0
+
+                if type(obj) != type(player1): #currently, the only other object it can be is a projectile
+                    return True
             print(row.getType())
+        
+
+
+def collision(): #checks if theres a collision
+    interactable()
+    checkCollision(player1)
+  
+
 
 
 def interactable(): #loops through every collideable object
@@ -171,14 +186,22 @@ def player(): #draws the player
 
 
 
-def drawItem(item):
+def drawItem(item): #draws the used item
     global projectileList
     global itemUse
     global currentItem
     global direction
     global projectileFired
+    global facingDirection
     if item != None:
-         item.setObject(START_COORDSX,START_COORDSY) #the player will always be in the center of the screen
+         if facingDirection == 1: # north
+            item.setObject(START_COORDSX,START_COORDSY - TILE_SIZE/2) #the player will always be in the center of the screen
+         elif facingDirection == 2:
+             item.setObject(START_COORDSX,START_COORDSY + TILE_SIZE/2) 
+         elif facingDirection == 3:
+             item.setObject(START_COORDSX + TILE_SIZE/2,START_COORDSY) 
+         elif facingDirection == 4:
+             item.setObject(START_COORDSX - TILE_SIZE/2,START_COORDSY) 
     if itemUse:
         item.renderObject(screen)
         if projectileFired:
@@ -188,11 +211,10 @@ def drawItem(item):
             #idk how this math works, stack overflow saved me
             angle = math.atan2(distance_y, distance_x)
             angledegree = math.degrees(angle) * -1
-            speed_x = SPEED * math.cos(angle)
-            speed_y = SPEED * math.sin(angle)
+            speed_x = PROJECTILE_SPEED * math.cos(angle)
+            speed_y = PROJECTILE_SPEED * math.sin(angle)
             projectileList.append(projectile(START_COORDSX,START_COORDSY,"Sprites/arrow64.png",64,speed_x,speed_y,angledegree))
-            print(projectileList)
-            projectileFired = False
+            projectileFired = False #so it runs only once
     else:
         projectileFired = False
         currentItem = None
@@ -204,6 +226,10 @@ def renderProjectiles(list):
         currenttick = pygame.time.get_ticks()
         #print(currenttick - projectile.getTime())
         if (currenttick - projectile.getTime()) >= 5000: #if 10 seconds has passed by, since sometimes there are frame skips, cannot be ==
+            list.remove(projectile)
+            print("removed")
+            break
+        elif checkCollision(projectile):
             list.remove(projectile)
             print("removed")
             break
@@ -242,6 +268,7 @@ while running:
             if key_pressed[K_d] and (not keyDown): 
                 velocityX = 4
                 direction = 1
+                facingDirection = 3
                 keyUp = False
                 keyDown = True
                 collisionKey = 1
@@ -251,6 +278,7 @@ while running:
             if key_pressed[K_a] and (not keyDown):
                 velocityX = -4
                 direction = -1
+                facingDirection = 4
                 keyUp = False
                 keyDown = True
                 collisionKey = 2
@@ -259,6 +287,7 @@ while running:
             if key_pressed[K_w] and (not keyDown):
                 velocityY = -4
                 direction = -1
+                facingDirection = 1
                 keyUp = False
                 keyDown = True
                 collisionKey = 3
@@ -267,6 +296,7 @@ while running:
             if key_pressed[K_s] and (not keyDown):
                 velocityY = 4
                 direction = 1
+                facingDirection = 2
                 keyUp = False
                 keyDown = True
                 collisionKey = 4
@@ -279,20 +309,39 @@ while running:
             #to un render inventory
             elif key_pressed[K_q] and inventory.getStatus() == True:
                 inventory.updateStatus(False)
+            
+            #if the inventory is open, make the options available to change
+            if key_pressed[K_RIGHT] and inventory.getStatus() == True:
+                inventory.updateSelection(1) #going right one
+               
+            if key_pressed[K_LEFT] and inventory.getStatus() == True:
+                inventory.updateSelection(-1) #going left one
+       
+            if key_pressed[K_RETURN] and inventory.getStatus() == True: #when we selected something
+                inventory.onEnter()
+                inventorylist = inventory.getInventoryList()
+                selection = inventory.getSeleciton()
+                
+                if selection == -1: #if we select this, then we are unselecting an item
+                    itemUse = False
+                else:
+                    currentItem = inventorylist[selection]
+                    itemUse = True
 
-            #if the inventory is open, item can be used
+            #if the inventory is open, item can be  used
             if key_pressed[K_r] and inventory.getStatus() == True:
              if key_pressed[K_r] and itemUse == True:
                  currentItem = None
                  itemUse = False
                  break
-             for index, item in enumerate(inventory.getInventoryList()):
+             #for index, item in enumerate(inventory.getInventoryList()):
                  if item.getID() == "bow":
                      currentItem = item
                      itemUse = True
 
         elif event.type == pygame.MOUSEBUTTONDOWN: #1 -left click, #2 - right click
-            if event.button == 1 and itemUse:
+            print(inventory.getCurrentObject().getID())
+            if event.button == 1 and itemUse and inventory.getCurrentObject().getID() == "bow":
                 projectileFired = True
             
 
