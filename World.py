@@ -5,7 +5,7 @@ from tile import StaticTile
 from npc import NPC
 import random
 class world_creator: #constructs the world
-    def __init__(self,world_type,surface,x,y): #the constructor of python
+    def __init__(self,world_type,surface,x,y): 
         self.display_surface = surface
         plain_layout = import_cvs_layout(world_type['plain'])
         self.plain_layout_sprite = self.create_tile_group(plain_layout,'plain')

@@ -1,4 +1,5 @@
 import pygame
+import math
 from pygame.locals import *
 from sys import exit
 from World import world_creator
@@ -8,6 +9,8 @@ from npc import NPC
 from textbox import textbox
 from textGenerator import TextGenerator
 from Inventory import Inventory
+from projectile import projectile
+from fractions import Fraction
 pygame.init()
 pygame.font.init()
 LENGTH = 1216
@@ -48,8 +51,12 @@ velocityY = 0
 direction = 0
 keyUp = False
 collisionKey = 0
+projectileFired = False
 keyDown = False
+itemUse = False
+currentItem = None
 running = True
+projectileList = []
 
 
 
@@ -96,6 +103,7 @@ def collision(): #checks if theres a collision
     global keyDown
     global direction
     global collisionKey
+    global currentItem
     interactable()
     list = world.getObjectList()
     for row_index, row in enumerate(list[1]):
@@ -137,6 +145,7 @@ def player(): #draws the player
     global velocityX #the speed of the player dictated by input
     global velocityY #the speed of the player dictated by input
     global keyUp #if we let go of the movement keys
+    #print(pygame.mouse.get_pos())
     player1.updateRelative(velocityX,velocityY) #here just to keep track of the player, is basically the asme thing as worldrelative
     world.updateRelative(velocityX,velocityY) #takes in user input and moves when held
     world.update_layout(-velocityX,velocityY) #takes in user input and moves when held
@@ -162,7 +171,45 @@ def player(): #draws the player
 
 
 
-    
+def drawItem(item):
+    global projectileList
+    global itemUse
+    global currentItem
+    global direction
+    global projectileFired
+    if item != None:
+         item.setObject(START_COORDSX,START_COORDSY) #the player will always be in the center of the screen
+    if itemUse:
+        item.renderObject(screen)
+        if projectileFired:
+            mousepos = pygame.mouse.get_pos()
+            distance_x = mousepos[0] - START_COORDSX
+            distance_y = mousepos[1] - START_COORDSY
+            #idk how this math works, stack overflow saved me
+            angle = math.atan2(distance_y, distance_x)
+            angledegree = math.degrees(angle) * -1
+            speed_x = SPEED * math.cos(angle)
+            speed_y = SPEED * math.sin(angle)
+            projectileList.append(projectile(START_COORDSX,START_COORDSY,"Sprites/arrow64.png",64,speed_x,speed_y,angledegree))
+            print(projectileList)
+            projectileFired = False
+    else:
+        projectileFired = False
+        currentItem = None
+        itemUse = False
+
+
+def renderProjectiles(list):
+    for index, projectile in enumerate(list):
+        currenttick = pygame.time.get_ticks()
+        #print(currenttick - projectile.getTime())
+        if (currenttick - projectile.getTime()) >= 5000: #if 10 seconds has passed by, since sometimes there are frame skips, cannot be ==
+            list.remove(projectile)
+            print("removed")
+            break
+        projectile.updateWorld(-velocityX,-velocityY) #account for the world moving
+        projectile.update()
+        projectile.render(screen)
 """
 def onTile(x):
     if (player1.getRelativeX() % TILE_SIZE) != 0:
@@ -191,7 +238,8 @@ while running:
         
         if event.type == pygame.KEYDOWN:
             key_pressed = pygame.key.get_pressed()
-            if key_pressed[K_d]:
+            #not keydown is used to prevent strafing
+            if key_pressed[K_d] and (not keyDown): 
                 velocityX = 4
                 direction = 1
                 keyUp = False
@@ -200,7 +248,7 @@ while running:
                 get_tile()
              
 
-            if key_pressed[K_a]:
+            if key_pressed[K_a] and (not keyDown):
                 velocityX = -4
                 direction = -1
                 keyUp = False
@@ -208,7 +256,7 @@ while running:
                 collisionKey = 2
                 get_tile()
 
-            if key_pressed[K_w]:
+            if key_pressed[K_w] and (not keyDown):
                 velocityY = -4
                 direction = -1
                 keyUp = False
@@ -216,7 +264,7 @@ while running:
                 collisionKey = 3
                 get_tile()
 
-            if key_pressed[K_s]:
+            if key_pressed[K_s] and (not keyDown):
                 velocityY = 4
                 direction = 1
                 keyUp = False
@@ -224,11 +272,28 @@ while running:
                 collisionKey = 4
                 get_tile()
 
+            #once inventory is true, inventory will render
             if key_pressed[K_q] and inventory.getStatus() == False:
                 inventory.updateStatus(True)
             
+            #to un render inventory
             elif key_pressed[K_q] and inventory.getStatus() == True:
                 inventory.updateStatus(False)
+
+            #if the inventory is open, item can be used
+            if key_pressed[K_r] and inventory.getStatus() == True:
+             if key_pressed[K_r] and itemUse == True:
+                 currentItem = None
+                 itemUse = False
+                 break
+             for index, item in enumerate(inventory.getInventoryList()):
+                 if item.getID() == "bow":
+                     currentItem = item
+                     itemUse = True
+
+        elif event.type == pygame.MOUSEBUTTONDOWN: #1 -left click, #2 - right click
+            if event.button == 1 and itemUse:
+                projectileFired = True
             
 
         elif event.type == pygame.KEYUP:
@@ -267,14 +332,6 @@ while running:
 
  
 
-                #collision()
-
-
-            #textbox logic
-            #if key_pressed[K_e]:
-                #for row in enumerate(npc_sprite_list):
-                    #if row[1].getRange():
-                        #textbox1.updateStatus(True) #figure out a work around for this later
             
 
     #once we are out of range
@@ -309,9 +366,12 @@ while running:
 
     
     screen.fill('blue')
+    #loads the world first, then checks for collison, then loads player logic, then loads in items. Lastly, it will load in projectile
     world.run(textbox_sprite_list)
     collision()
     player()
+    drawItem(currentItem)
+    renderProjectiles(projectileList)
     #inventory logic
     if inventory.getStatus():
         inventory.render(screen)
