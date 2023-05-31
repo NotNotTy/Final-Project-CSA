@@ -10,6 +10,7 @@ from textbox import textbox
 from textGenerator import TextGenerator
 from Inventory import Inventory
 from projectile import projectile
+from melee import melee
 from fractions import Fraction
 pygame.init()
 pygame.font.init()
@@ -54,10 +55,12 @@ facingDirection = 2 #where the character is currently facing, either north,south
 keyUp = False
 collisionKey = 0
 projectileFired = False #if its true, a segment of code will run
-meleeSwungTime = 0 #once left click is pressed and a melee is in hand, this variable will set the start time for the melee
+meleeSwung = False #if true, a segment of code will run
+meleeInUse = False
 keyDown = False #boolean to use as conditional
 itemUse = False #boolean to use as conditional
 currentItem = None 
+previousItem = None
 running = True
 projectileList = []
 meleeList = []
@@ -207,6 +210,28 @@ def projectileCreation(): #creates the projectiles
         projectileList.append(projectile(START_COORDSX,START_COORDSY,"Sprites/arrow64.png",64,speed_x,speed_y,angledegree)) #sprite is subjected to change
         projectileFired = False #so it runs only once
 
+def meleeCreation():
+    global meleeList
+    global itemUse
+    global currentItem
+    global meleeSwung
+    global previousItem
+    global meleeInUse
+    if meleeSwung:
+        mousepos = pygame.mouse.get_pos()
+        distance_x = mousepos[0] - currentItem.getObjectX()
+        distance_y = mousepos[1] - currentItem.getObjectY()
+        #idk how this math works, stack overflow saved me
+        angle = math.atan2(distance_y, distance_x)
+        angledegree = math.degrees(angle) * -1
+        speed_x = PROJECTILE_SPEED * math.cos(angle)
+        speed_y = PROJECTILE_SPEED * math.sin(angle)
+        meleeList.append(melee(currentItem.getObjectX(),currentItem.getObjectY(),"Sprites/sword64.png",TILE_SIZE,speed_x,speed_y,angledegree)) #sprite is subjected to change
+        meleeSwung = False #so it runs only once
+        meleeInUse = True
+        previousItem = currentItem
+
+
 def drawItem(item): #draws the used item
     global projectileList
     global itemUse
@@ -217,14 +242,19 @@ def drawItem(item): #draws the used item
     if item != None:
          if facingDirection == 1: # north
             item.setObject(START_COORDSX,START_COORDSY - TILE_SIZE/2) #the player will always be in the center of the screen
+            (item.getObject()).changeOrientation(0)
          elif facingDirection == 2:
              item.setObject(START_COORDSX,START_COORDSY + TILE_SIZE/2) 
+             (item.getObject()).changeOrientation(180)
          elif facingDirection == 3:
              item.setObject(START_COORDSX + TILE_SIZE/2,START_COORDSY) 
+             (item.getObject()).changeOrientation(-45)
          elif facingDirection == 4:
              item.setObject(START_COORDSX - TILE_SIZE/2,START_COORDSY) 
+             (item.getObject()).changeOrientation(45)
     if itemUse:
         projectileCreation()
+        meleeCreation()
 
     else:
         projectileFired = False
@@ -235,19 +265,44 @@ def drawItem(item): #draws the used item
 
 
 def renderMelee(list): #goal - CREATE A NEW MELEE CLASS THATS FOR MELEE, INDEPENDENT OF THE ITEM CLASS
-    global meleeSwungTime
     global currentItem
-    currenttick = pygame.time.get_ticks()
+    global previousItem
+    global meleeInUse
     for index, melee in enumerate(list):
-        if (currenttick - meleeSwungTime) >= 1050: #if 5 seconds has passed by, since sometimes there are frame skips, cannot be ==
+        currenttick = pygame.time.get_ticks()
+        #print(currenttick - projectile.getTime())
+        if (currenttick - melee.getTime()) >= 2000: #end condition
             list.remove(melee)
             print("removed melee")
+            currentItem = previousItem
+            previousItem = None
+            meleeInUse = False
             break
-        if (currenttick - meleeSwungTime) >= 0 and (currenttick - meleeSwungTime) <= 1000: #0-1 seconds
-            print(currenttick - meleeSwungTime)
-            object = melee.getObject()
-            object.update(100,4)
-            object.render(screen)
+
+        elif checkCollision(melee):
+            list.remove(melee)
+            print("removed melee")
+            currentItem = previousItem
+            previousItem = None
+            meleeInUse = False
+            break
+        else:
+            if (currenttick - melee.getTime()) >= 0 and (currenttick - melee.getTime()) < 1000:
+                melee.updateWorld(-velocityX,-velocityY) #account for the world moving
+                melee.updateForwardMovement(0.5)  #speed between 0-1
+                melee.render(screen)
+                currentItem = None
+
+            if (currenttick - melee.getTime()) >= 1000 and (currenttick - melee.getTime()) < 2000:
+                melee.updateWorld(-velocityX,-velocityY) #account for the world moving
+                melee.updateBackwardMovement(0.5)
+                melee.render(screen)
+                currentItem = None
+        
+ 
+        #melee.updateWorld(-velocityX,-velocityY) #account for the world moving
+        #melee.update()
+        #melee.render(screen)
 
 def renderProjectiles(list): #this renders every projectile on the list
     for index, projectile in enumerate(list):
@@ -371,9 +426,8 @@ while running:
             print(inventory.getCurrentObject().getID())
             if event.button == 1 and itemUse and inventory.getCurrentObject().getID() == "bow":
                 projectileFired = True
-            if event.button == 1 and itemUse and inventory.getCurrentObject().getID() == "sword": #segment used to render melee attacks
-                meleeSwungTime = pygame.time.get_ticks()
-                meleeList.append(currentItem)
+            if event.button == 1 and itemUse and inventory.getCurrentObject().getID() == "sword" and not meleeInUse: #segment used to render melee attacks
+                meleeSwung = True
 
             
 

@@ -34,6 +34,14 @@ class InventorySlot:
 
     def getObject(self):
         return self.item
+    
+    def getObjectX(self):
+        return (self.item).getX()
+    
+    def getObjectY(self):
+        return (self.item).getY()
+    
+    
 
 
 
