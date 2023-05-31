@@ -22,8 +22,8 @@ textboxImg = pygame.image.load("Sprites/textbox2.png")
 clock = pygame.time.Clock() #clock
 TILE_SIZE = 64 #each tile is 32x32 big
 FPS = 60 #pretty self explainitory
-CAMERA_EDGE_X = LENGTH -  (TILE_SIZE * 1) #the edges are where the world will start to shift to give the impression that the camera is following the player. Multipler 8 
-CAMERA_EDGE_Y = WIDTH - (TILE_SIZE * 1) # 4
+#CAMERA_EDGE_X = LENGTH -  (TILE_SIZE * 1) #the edges are where the world will start to shift to give the impression that the camera is following the player. Multipler 8 
+#CAMERA_EDGE_Y = WIDTH - (TILE_SIZE * 1) # 4
 START_COORDSX = 512 #start coordinates, used to keep the original position in a constant
 START_COORDSY = 320
 NPC_STARTCOORDSX = 768
@@ -53,12 +53,14 @@ direction = 0 #WASD directions
 facingDirection = 2 #where the character is currently facing, either north,south,east,or west. 1 - North, 2 - South, 3 - East, 4 - West
 keyUp = False
 collisionKey = 0
-projectileFired = False
-keyDown = False
-itemUse = False
-currentItem = None
+projectileFired = False #if its true, a segment of code will run
+meleeSwungTime = 0 #once left click is pressed and a melee is in hand, this variable will set the start time for the melee
+keyDown = False #boolean to use as conditional
+itemUse = False #boolean to use as conditional
+currentItem = None 
 running = True
 projectileList = []
+meleeList = []
 
 
 
@@ -84,6 +86,8 @@ def CollisionUpdateDirectionX(r):
     global direction
     global velocityX
     direction = r
+    if direction == 0:
+        pass
     velocityX = 0 #reset velocity to avoid extra inputs
     world.update_layout(SPEED  * direction,0) #keep moving at speed until we are on a tile
     world.updateRelative(-SPEED * direction,0) #keep moving at speed until we are tile
@@ -96,6 +100,8 @@ def CollisionUpdateDirectionY(r):
     global velocityY
     velocityY = 0
     direction = r
+    if direction == 0:
+        pass
     world.update_layout(0,-SPEED  * direction) #keep moving at speed until we are on a tile
     world.updateRelative(0,-SPEED * direction) #keep moving at speed until we are on a tile
     player1.updateRelative(0,-SPEED * direction)
@@ -184,7 +190,22 @@ def player(): #draws the player
     all_sprites_list.draw(screen)
     player1.render(screen) 
 
-
+def projectileCreation(): #creates the projectiles
+    global projectileList
+    global itemUse
+    global currentItem
+    global projectileFired
+    if projectileFired: #projectiles create a another object. This code appends a projectile object to a list to be rendered
+        mousepos = pygame.mouse.get_pos()
+        distance_x = mousepos[0] - START_COORDSX
+        distance_y = mousepos[1] - START_COORDSY
+        #idk how this math works, stack overflow saved me
+        angle = math.atan2(distance_y, distance_x)
+        angledegree = math.degrees(angle) * -1
+        speed_x = PROJECTILE_SPEED * math.cos(angle)
+        speed_y = PROJECTILE_SPEED * math.sin(angle)
+        projectileList.append(projectile(START_COORDSX,START_COORDSY,"Sprites/arrow64.png",64,speed_x,speed_y,angledegree)) #sprite is subjected to change
+        projectileFired = False #so it runs only once
 
 def drawItem(item): #draws the used item
     global projectileList
@@ -203,29 +224,36 @@ def drawItem(item): #draws the used item
          elif facingDirection == 4:
              item.setObject(START_COORDSX - TILE_SIZE/2,START_COORDSY) 
     if itemUse:
-        item.renderObject(screen)
-        if projectileFired:
-            mousepos = pygame.mouse.get_pos()
-            distance_x = mousepos[0] - START_COORDSX
-            distance_y = mousepos[1] - START_COORDSY
-            #idk how this math works, stack overflow saved me
-            angle = math.atan2(distance_y, distance_x)
-            angledegree = math.degrees(angle) * -1
-            speed_x = PROJECTILE_SPEED * math.cos(angle)
-            speed_y = PROJECTILE_SPEED * math.sin(angle)
-            projectileList.append(projectile(START_COORDSX,START_COORDSY,"Sprites/arrow64.png",64,speed_x,speed_y,angledegree))
-            projectileFired = False #so it runs only once
+        projectileCreation()
+
     else:
         projectileFired = False
         currentItem = None
         itemUse = False
 
 
-def renderProjectiles(list):
+
+
+def renderMelee(list): #goal - CREATE A NEW MELEE CLASS THATS FOR MELEE, INDEPENDENT OF THE ITEM CLASS
+    global meleeSwungTime
+    global currentItem
+    currenttick = pygame.time.get_ticks()
+    for index, melee in enumerate(list):
+        if (currenttick - meleeSwungTime) >= 1050: #if 5 seconds has passed by, since sometimes there are frame skips, cannot be ==
+            list.remove(melee)
+            print("removed melee")
+            break
+        if (currenttick - meleeSwungTime) >= 0 and (currenttick - meleeSwungTime) <= 1000: #0-1 seconds
+            print(currenttick - meleeSwungTime)
+            object = melee.getObject()
+            object.update(100,4)
+            object.render(screen)
+
+def renderProjectiles(list): #this renders every projectile on the list
     for index, projectile in enumerate(list):
         currenttick = pygame.time.get_ticks()
         #print(currenttick - projectile.getTime())
-        if (currenttick - projectile.getTime()) >= 5000: #if 10 seconds has passed by, since sometimes there are frame skips, cannot be ==
+        if (currenttick - projectile.getTime()) >= 5000: #if 5 seconds has passed by, since sometimes there are frame skips, cannot be ==
             list.remove(projectile)
             print("removed")
             break
@@ -343,6 +371,10 @@ while running:
             print(inventory.getCurrentObject().getID())
             if event.button == 1 and itemUse and inventory.getCurrentObject().getID() == "bow":
                 projectileFired = True
+            if event.button == 1 and itemUse and inventory.getCurrentObject().getID() == "sword": #segment used to render melee attacks
+                meleeSwungTime = pygame.time.get_ticks()
+                meleeList.append(currentItem)
+
             
 
         elif event.type == pygame.KEYUP:
@@ -420,7 +452,10 @@ while running:
     collision()
     player()
     drawItem(currentItem)
+    if currentItem != None:
+        currentItem.renderObject(screen)
     renderProjectiles(projectileList)
+    renderMelee(meleeList)
     #inventory logic
     if inventory.getStatus():
         inventory.render(screen)

@@ -32,6 +32,9 @@ class InventorySlot:
     def updateObject(self,x,y):
         self.item.update(x,y)
 
+    def getObject(self):
+        return self.item
+
 
 
     #def updateObjecet(self,x,y):
