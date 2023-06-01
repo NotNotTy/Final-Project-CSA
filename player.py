@@ -9,6 +9,8 @@ class Player(pygame.sprite.Sprite):
         self.image = surface
         self.relativeX = x
         self.relativeY = y
+        self.cropped_region = (0,0,64,64)
+        self.cropped_subsurf = self.image.subsurface(self.cropped_region)
 
     def update(self,x,y):
         self.rect.x += x
@@ -18,8 +20,37 @@ class Player(pygame.sprite.Sprite):
         self.relativeX += x
         self.relativeY += y
 
+    def updateSprite(self, id):
+        TILE_SIZE = 64
+        if id == 1: #north
+            if (self.relativeY % TILE_SIZE) != 0: #if he is moving
+                self.cropped_region = (TILE_SIZE,TILE_SIZE * 3,TILE_SIZE,TILE_SIZE)
+            else:
+                self.cropped_region = (0, TILE_SIZE* 3,TILE_SIZE,TILE_SIZE)
+        if id == 2: #south
+            if (self.relativeY % TILE_SIZE) != 0:
+                self.cropped_region = (TILE_SIZE,0,TILE_SIZE,TILE_SIZE)
+            else:
+                self.cropped_region = (0,0,TILE_SIZE,TILE_SIZE)
+
+        if id == 3: #east
+            if (self.relativeX % TILE_SIZE) != 0:
+                self.cropped_region = (TILE_SIZE,TILE_SIZE * 2,TILE_SIZE,TILE_SIZE)
+            else:
+                self.cropped_region = (0,TILE_SIZE * 2,TILE_SIZE,TILE_SIZE)
+
+        if id == 4: #west
+            if (self.relativeX % TILE_SIZE) != 0:
+                self.cropped_region = (TILE_SIZE,TILE_SIZE,TILE_SIZE,TILE_SIZE)
+            else:
+                self.cropped_region = (0,TILE_SIZE,TILE_SIZE,TILE_SIZE)
+
+
+
+
     def render(self,display):
-        display.blit(self.image,(self.rect.x,self.rect.y))
+        self.cropped_subsurf = self.image.subsurface(self.cropped_region)
+        display.blit(self.cropped_subsurf,(self.rect.x,self.rect.y - 3)) #the sprite for red has an offset of about 3 pixels
 
     def getRelativeX(self):
         return self.relativeX

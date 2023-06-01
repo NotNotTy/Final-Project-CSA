@@ -17,7 +17,7 @@ pygame.font.init()
 LENGTH = 1216
 WIDTH = 704
 screen = pygame.display.set_mode((LENGTH,WIDTH)) #a single tile is 32 by 32, entire map is 60x60 tiles
-playerImg = pygame.image.load("Sprites/character64.png") #fill this
+playerImg = pygame.image.load("Sprites/red.png") #fill this
 npcImg = pygame.image.load("Sprites/character64.png")
 textboxImg = pygame.image.load("Sprites/textbox2.png")
 clock = pygame.time.Clock() #clock
@@ -50,13 +50,15 @@ npc_sprite_list.add(npc1,npc2)
 textbox_sprite_list.add(textbox1)
 velocityX = 0
 velocityY = 0
-direction = 0 #WASD directions
+direction = 0 #WASD directions. D and W are positive, A and S are negative
+lastDirection = 2 #this direction will never reset. Either be north south esat or west
 facingDirection = 2 #where the character is currently facing, either north,south,east,or west. 1 - North, 2 - South, 3 - East, 4 - West
 keyUp = False
 collisionKey = 0
 projectileFired = False #if its true, a segment of code will run
 meleeSwung = False #if true, a segment of code will run
 meleeInUse = False
+change = True
 keyDown = False #boolean to use as conditional
 itemUse = False #boolean to use as conditional
 currentItem = None 
@@ -169,7 +171,9 @@ def player(): #draws the player
     global velocityX #the speed of the player dictated by input
     global velocityY #the speed of the player dictated by input
     global keyUp #if we let go of the movement keys
+    global lastDirection
     #print(pygame.mouse.get_pos())
+    player1.updateSprite(lastDirection)
     player1.updateRelative(velocityX,velocityY) #here just to keep track of the player, is basically the asme thing as worldrelative
     world.updateRelative(velocityX,velocityY) #takes in user input and moves when held
     world.update_layout(-velocityX,velocityY) #takes in user input and moves when held
@@ -226,7 +230,7 @@ def meleeCreation():
         angledegree = math.degrees(angle) * -1
         speed_x = PROJECTILE_SPEED * math.cos(angle)
         speed_y = PROJECTILE_SPEED * math.sin(angle)
-        meleeList.append(melee(currentItem.getObjectX(),currentItem.getObjectY(),"Sprites/sword64.png",TILE_SIZE,speed_x,speed_y,angledegree)) #sprite is subjected to change
+        meleeList.append(melee(currentItem.getObjectX(),currentItem.getObjectY(),"Sprites/sword64rotated.png",TILE_SIZE,speed_x,speed_y,angledegree)) #sprite is subjected to change
         meleeSwung = False #so it runs only once
         meleeInUse = True
         previousItem = currentItem
@@ -239,18 +243,20 @@ def drawItem(item): #draws the used item
     global direction
     global projectileFired
     global facingDirection
+    global change
     if item != None:
+         #due to flipping issues regarding size, some of the object's placement has been manually ajusted
          if facingDirection == 1: # north
-            item.setObject(START_COORDSX,START_COORDSY - TILE_SIZE/2) #the player will always be in the center of the screen
+            item.setObject(START_COORDSX,(START_COORDSY - TILE_SIZE * .75)) #the player will always be in the center of the screen
             (item.getObject()).changeOrientation(0)
-         elif facingDirection == 2:
-             item.setObject(START_COORDSX,START_COORDSY + TILE_SIZE/2) 
-             (item.getObject()).changeOrientation(180)
-         elif facingDirection == 3:
-             item.setObject(START_COORDSX + TILE_SIZE/2,START_COORDSY) 
+         elif facingDirection == 2: #south
+             item.setObject(START_COORDSX,(START_COORDSY + TILE_SIZE/2)) 
+             (item.getObject()).changeOrientation(-180)
+         elif facingDirection == 3: #east
+             item.setObject((START_COORDSX + TILE_SIZE/2),START_COORDSY) 
              (item.getObject()).changeOrientation(-45)
-         elif facingDirection == 4:
-             item.setObject(START_COORDSX - TILE_SIZE/2,START_COORDSY) 
+         elif facingDirection == 4: #west
+             item.setObject((START_COORDSX - TILE_SIZE * .75),START_COORDSY) 
              (item.getObject()).changeOrientation(45)
     if itemUse:
         projectileCreation()
@@ -271,7 +277,7 @@ def renderMelee(list): #goal - CREATE A NEW MELEE CLASS THATS FOR MELEE, INDEPEN
     for index, melee in enumerate(list):
         currenttick = pygame.time.get_ticks()
         #print(currenttick - projectile.getTime())
-        if (currenttick - melee.getTime()) >= 2000: #end condition
+        if (currenttick - melee.getTime()) >= 505: #end condition
             list.remove(melee)
             print("removed melee")
             currentItem = previousItem
@@ -287,15 +293,17 @@ def renderMelee(list): #goal - CREATE A NEW MELEE CLASS THATS FOR MELEE, INDEPEN
             meleeInUse = False
             break
         else:
-            if (currenttick - melee.getTime()) >= 0 and (currenttick - melee.getTime()) < 1000:
+            if (currenttick - melee.getTime()) >= 0 and (currenttick - melee.getTime()) < 250:
                 melee.updateWorld(-velocityX,-velocityY) #account for the world moving
-                melee.updateForwardMovement(0.5)  #speed between 0-1
+                melee.updateOrientation()
+                melee.updateForwardMovement(0.8)  #speed between 0-1
                 melee.render(screen)
                 currentItem = None
 
-            if (currenttick - melee.getTime()) >= 1000 and (currenttick - melee.getTime()) < 2000:
+            if (currenttick - melee.getTime()) >= 250 and (currenttick - melee.getTime()) < 500:
                 melee.updateWorld(-velocityX,-velocityY) #account for the world moving
-                melee.updateBackwardMovement(0.5)
+                melee.updateOrientation()
+                melee.updateBackwardMovement(0.8)
                 melee.render(screen)
                 currentItem = None
         
@@ -319,6 +327,37 @@ def renderProjectiles(list): #this renders every projectile on the list
         projectile.updateWorld(-velocityX,-velocityY) #account for the world moving
         projectile.update()
         projectile.render(screen)
+
+def inRadius(): #if the mouse is in a certain radius of the weapon, it will fire
+    mousepos = pygame.mouse.get_pos()
+    distance_x = mousepos[0] - currentItem.getObjectX()
+    distance_y = mousepos[1] - currentItem.getObjectY()
+    #idk how this math works, stack overflow saved me
+    angle = math.atan2(distance_y, distance_x)
+    angledegree = math.degrees(angle)
+
+    if lastDirection == 1: #north
+        if angledegree > -180 and angledegree < 0: #180 - 0
+            return True 
+        print(lastDirection)
+        print(angledegree)
+
+    if lastDirection == 2: #south
+        if angledegree <= 180 and angledegree >= 0:
+            return True
+
+    if lastDirection == 3: #east
+        if angledegree >= -90 and angledegree < 90:
+            return True
+    
+    if lastDirection == 4: #west
+        if angledegree < -90 or angledegree >= 90:
+            return True
+        
+    print(lastDirection)
+    print(angledegree)
+    return False
+
 """
 def onTile(x):
     if (player1.getRelativeX() % TILE_SIZE) != 0:
@@ -351,6 +390,7 @@ while running:
             if key_pressed[K_d] and (not keyDown): 
                 velocityX = 4
                 direction = 1
+                lastDirection = 3
                 facingDirection = 3
                 keyUp = False
                 keyDown = True
@@ -361,6 +401,7 @@ while running:
             if key_pressed[K_a] and (not keyDown):
                 velocityX = -4
                 direction = -1
+                lastDirection = 4
                 facingDirection = 4
                 keyUp = False
                 keyDown = True
@@ -370,6 +411,7 @@ while running:
             if key_pressed[K_w] and (not keyDown):
                 velocityY = -4
                 direction = -1
+                lastDirection = 1
                 facingDirection = 1
                 keyUp = False
                 keyDown = True
@@ -379,6 +421,7 @@ while running:
             if key_pressed[K_s] and (not keyDown):
                 velocityY = 4
                 direction = 1
+                lastDirection = 2
                 facingDirection = 2
                 keyUp = False
                 keyDown = True
@@ -400,7 +443,7 @@ while running:
             if key_pressed[K_LEFT] and inventory.getStatus() == True:
                 inventory.updateSelection(-1) #going left one
        
-            if key_pressed[K_RETURN] and inventory.getStatus() == True: #when we selected something
+            if key_pressed[K_RETURN] and inventory.getStatus() == True and not meleeInUse: #when we selected something
                 inventory.onEnter()
                 inventorylist = inventory.getInventoryList()
                 selection = inventory.getSeleciton()
@@ -427,7 +470,8 @@ while running:
             if event.button == 1 and itemUse and inventory.getCurrentObject().getID() == "bow":
                 projectileFired = True
             if event.button == 1 and itemUse and inventory.getCurrentObject().getID() == "sword" and not meleeInUse: #segment used to render melee attacks
-                meleeSwung = True
+                if inRadius(): #if we are aiming infront of us 
+                    meleeSwung = True
 
             
 
