@@ -58,6 +58,7 @@ collisionKey = 0
 projectileFired = False #if its true, a segment of code will run
 meleeSwung = False #if true, a segment of code will run
 meleeInUse = False
+showAttackWarning = False #if you try to use your weapon out of radius, this will update
 change = True
 keyDown = False #boolean to use as conditional
 itemUse = False #boolean to use as conditional
@@ -80,12 +81,7 @@ meleeList = []
 
 
 
-def get_tile(): #returns the coordinate position of the player
-    coords = [(player1.getRelativeX() - START_COORDSX)//TILE_SIZE,(player1.getRelativeY()-START_COORDSY)//TILE_SIZE]
-    #print(playerXRelative//TILE_SIZE,playerYRelative//TILE_SIZE)
-    #print(playerXRelative,playerYRelative)
-    print(coords)
-
+#----------------------------------------------------------COLLISION---------------------------------------------#
 #manually updates the direction based on the parameters
 def CollisionUpdateDirectionX(r):
     global direction
@@ -165,7 +161,7 @@ def interactable(): #loops through every collideable object
              row[1].editRange(False)
              #print(row[1].getRange())
 
-
+#--------------------------------------------------------WORLD UPDATING------------------------------------------------------#
 def player(): #draws the player
     global direction
     global velocityX #the speed of the player dictated by input
@@ -197,6 +193,50 @@ def player(): #draws the player
     all_sprites_list.draw(screen)
     player1.render(screen) 
 
+def drawItem(item): #draws the used item
+    global projectileList
+    global itemUse
+    global currentItem
+    global direction
+    global projectileFired
+    global facingDirection
+    global change
+    if item != None:
+         #due to flipping issues regarding size, some of the object's placement has been manually ajusted
+         if facingDirection == 1: # north
+            item.setObject(START_COORDSX,(START_COORDSY - TILE_SIZE * .75)) #the player will always be in the center of the screen
+            if item.getID() == "bow":
+             (item.getObject()).changeOrientation(90)
+            else:
+             (item.getObject()).changeOrientation(0)
+         elif facingDirection == 2: #south
+             item.setObject(START_COORDSX,(START_COORDSY + TILE_SIZE/2)) 
+             if item.getID() == "bow":
+                 (item.getObject()).changeOrientation(-90)
+             else:
+                (item.getObject()).changeOrientation(-180)
+         elif facingDirection == 3: #east
+             item.setObject((START_COORDSX + TILE_SIZE/2),START_COORDSY) 
+             if item.getID() == "bow":
+                 (item.getObject()).changeOrientation(0)
+             else:
+                (item.getObject()).changeOrientation(-45)
+         elif facingDirection == 4: #west
+             item.setObject((START_COORDSX - TILE_SIZE * .75),START_COORDSY) 
+             if item.getID() == "bow":
+                 (item.getObject()).changeOrientation(180)
+             else:
+                 (item.getObject()).changeOrientation(45)
+    if itemUse:
+        projectileCreation()
+        meleeCreation()
+        #textCreation() Unused, might use later
+
+    else:
+        projectileFired = False
+        currentItem = None
+        itemUse = False
+#-------------------------------------------------------CREATION SECTION---------------------------------------------------------------#
 def projectileCreation(): #creates the projectiles
     global projectileList
     global itemUse
@@ -235,39 +275,21 @@ def meleeCreation():
         meleeInUse = True
         previousItem = currentItem
 
-
-def drawItem(item): #draws the used item
-    global projectileList
-    global itemUse
-    global currentItem
-    global direction
-    global projectileFired
-    global facingDirection
-    global change
-    if item != None:
-         #due to flipping issues regarding size, some of the object's placement has been manually ajusted
-         if facingDirection == 1: # north
-            item.setObject(START_COORDSX,(START_COORDSY - TILE_SIZE * .75)) #the player will always be in the center of the screen
-            (item.getObject()).changeOrientation(0)
-         elif facingDirection == 2: #south
-             item.setObject(START_COORDSX,(START_COORDSY + TILE_SIZE/2)) 
-             (item.getObject()).changeOrientation(-180)
-         elif facingDirection == 3: #east
-             item.setObject((START_COORDSX + TILE_SIZE/2),START_COORDSY) 
-             (item.getObject()).changeOrientation(-45)
-         elif facingDirection == 4: #west
-             item.setObject((START_COORDSX - TILE_SIZE * .75),START_COORDSY) 
-             (item.getObject()).changeOrientation(45)
-    if itemUse:
-        projectileCreation()
-        meleeCreation()
-
-    else:
-        projectileFired = False
-        currentItem = None
-        itemUse = False
+def textCreation():
+    global showAttackWarning
+    if showAttackWarning:
+        text2 = TextGenerator(player1.getRelativeX(),player1.getRelativeY() - 32, 'You cannot use your weapon behind you!', 'freesansbold.ttf')
+        renderText(text2)
+#----------------------------------------------------------------------------------------------------------------------#
 
 
+#------------------------------------------RENDERING SECTION--------------------------------------------------------------------------------
+def renderText(text): #function used to render all text
+    global velocityX
+    global velocityY
+    if showAttackWarning:
+        text.update(-velocityX,-velocityY)
+        text.render(screen,player1.getRelativeX(), player1.getRelativeY())
 
 
 def renderMelee(list): #goal - CREATE A NEW MELEE CLASS THATS FOR MELEE, INDEPENDENT OF THE ITEM CLASS
@@ -301,6 +323,13 @@ def renderMelee(list): #goal - CREATE A NEW MELEE CLASS THATS FOR MELEE, INDEPEN
                 currentItem = None
 
             if (currenttick - melee.getTime()) >= 250 and (currenttick - melee.getTime()) < 500:
+                if pygame.sprite.collide_rect(melee, player1): #account for player movement
+                    list.remove(melee)
+                    print("removed melee")
+                    currentItem = previousItem
+                    previousItem = None
+                    meleeInUse = False
+                    break
                 melee.updateWorld(-velocityX,-velocityY) #account for the world moving
                 melee.updateOrientation()
                 melee.updateBackwardMovement(0.8)
@@ -327,7 +356,7 @@ def renderProjectiles(list): #this renders every projectile on the list
         projectile.updateWorld(-velocityX,-velocityY) #account for the world moving
         projectile.update()
         projectile.render(screen)
-
+#----------------------------------------------------------------------------------------------------------------------------------------#
 def inRadius(): #if the mouse is in a certain radius of the weapon, it will fire
     mousepos = pygame.mouse.get_pos()
     distance_x = mousepos[0] - currentItem.getObjectX()
@@ -358,21 +387,12 @@ def inRadius(): #if the mouse is in a certain radius of the weapon, it will fire
     print(angledegree)
     return False
 
-"""
-def onTile(x):
-    if (player1.getRelativeX() % TILE_SIZE) != 0:
-            if x == 1: #want to take us to the next tile
-                print(player1.getRelativeX() % TILE_SIZE)
-                player1.update((TILE_SIZE - (player1.getRelativeX() % TILE_SIZE)),0)
-            else:
-                player1.update((player1.getRelativeX() % TILE_SIZE) * x,0)
-    elif (player1.getRelativeY() % TILE_SIZE) != 0:
-        if x == 1:
-            player1.update(0,TILE_SIZE - (player1.getRelativeY() % TILE_SIZE))
-        else:
-            player1.update(0,(player1.getRelativeY() % TILE_SIZE) * x)
-"""
 
+def get_tile(): #returns the coordinate position of the player
+    coords = [(player1.getRelativeX() - START_COORDSX)//TILE_SIZE,(player1.getRelativeY()-START_COORDSY)//TILE_SIZE]
+    #print(playerXRelative//TILE_SIZE,playerYRelative//TILE_SIZE)
+    #print(playerXRelative,playerYRelative)
+    print(coords)
             
 
 while running:
@@ -472,6 +492,9 @@ while running:
             if event.button == 1 and itemUse and inventory.getCurrentObject().getID() == "sword" and not meleeInUse: #segment used to render melee attacks
                 if inRadius(): #if we are aiming infront of us 
                     meleeSwung = True
+                    showAttackWarning = False
+                else:
+                    showAttackWarning = True
 
             
 

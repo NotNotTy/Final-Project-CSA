@@ -13,7 +13,7 @@ class Inventory:
         self.selectionnum = 0
         self.previousselection = 0
         self.slot.append(InventorySlot("sword","Sprites/sword64.png", Item("Sprites/sword64rotated.png",64)))
-        self.slot.append(InventorySlot("bow","Sprites/bow64.png",Item("Sprites/bow64.png",64)))
+        self.slot.append(InventorySlot("bow","Sprites/bow64.png",Item("Sprites/bow64rotated.png",64)))
 
     def render(self, display):
         TILE_SIZE = 64

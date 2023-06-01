@@ -18,6 +18,9 @@ class melee:
         self.x = x
         self.y = y
 
+    def getCurrentPosition(self):
+        return [self.x,self.y]
+    
     def update(self):
         self.x += self.nx
         self.y += self.ny
