@@ -11,6 +11,7 @@ from textGenerator import TextGenerator
 from Inventory import Inventory
 from projectile import projectile
 from melee import melee
+from enemy import enemy
 from fractions import Fraction
 pygame.init()
 pygame.font.init()
@@ -40,6 +41,7 @@ npc1 = NPC(TILE_SIZE,NPC_STARTCOORDSX,NPC_STARTCOORDSY,npcImg,'npc',False)
 npc2 = NPC(TILE_SIZE,NPC_STARTCOORDSX + 128,NPC_STARTCOORDSY,npcImg,'npc',False)
 textbox1 = textbox(TILE_SIZE,(LENGTH/2) - (384/2),player1.getY() + 7 * TILE_SIZE,textboxImg,'textbox',False)
 text = TextGenerator(START_COORDSX,START_COORDSY - 64,'press E to interact','freesansbold.ttf')
+testenemy = enemy("Sprites/character64.png",200,20,START_COORDSX + 64,START_COORDSY + 64,START_COORDSX,START_COORDSY,screen)
 inventory = Inventory()
 all_sprites_list = pygame.sprite.Group()
 npc_sprite_list = pygame.sprite.Group()
@@ -50,6 +52,9 @@ npc_sprite_list.add(npc1,npc2)
 textbox_sprite_list.add(textbox1)
 velocityX = 0
 velocityY = 0
+isMoving = False
+WorldVelocityX = 0 #since velocityX and velocityY are resetted to zero to account for player movement, this is used for the rest of the World
+WorldVelocityY = 0
 direction = 0 #WASD directions. D and W are positive, A and S are negative
 lastDirection = 2 #this direction will never reset. Either be north south esat or west
 facingDirection = 2 #where the character is currently facing, either north,south,east,or west. 1 - North, 2 - South, 3 - East, 4 - West
@@ -67,6 +72,8 @@ previousItem = None
 running = True
 projectileList = []
 meleeList = []
+enemyList = []
+enemyList.append(testenemy)
 
 
 
@@ -168,6 +175,7 @@ def player(): #draws the player
     global velocityY #the speed of the player dictated by input
     global keyUp #if we let go of the movement keys
     global lastDirection
+    global isMoving
     #print(pygame.mouse.get_pos())
     player1.updateSprite(lastDirection)
     player1.updateRelative(velocityX,velocityY) #here just to keep track of the player, is basically the asme thing as worldrelative
@@ -175,12 +183,14 @@ def player(): #draws the player
     world.update_layout(-velocityX,velocityY) #takes in user input and moves when held
     all_sprites_list.update(-velocityX,-velocityY)#keep moving at speed until we are tile
     if ((world.getRelativeX() % TILE_SIZE) != 0 and keyUp): #if we are not on a tile and we are not holding a key, reajust to a tile
+        isMoving = True
         velocityX = 0 #reset velocity to avoid extra inputs
         world.update_layout(-SPEED  * direction,0) #keep moving at speed until we are on a tile
         world.updateRelative(SPEED * direction,0) #keep moving at speed until we are tile
         player1.updateRelative(SPEED * direction,0)
         all_sprites_list.update(-SPEED  * direction,0)#keep moving at speed until we are tile
     elif ((world.getRelativeY() % TILE_SIZE) != 0 and keyUp): #if we are not on a tile and we are not holding a key, reajust to a tile
+        isMoving = True
         velocityY = 0  #reset velocity to avoid extra inputs
         world.update_layout(0,SPEED  * direction) #keep moving at speed until we are on a tile
         world.updateRelative(0,SPEED * direction) #keep moving at speed until we are on a tile
@@ -188,6 +198,7 @@ def player(): #draws the player
         all_sprites_list.update(0,-SPEED  * direction) #keep moving at speed until we are on a tile
 
     else:
+        isMoving = False
         keyUp = False
         direction = 0
     all_sprites_list.draw(screen)
@@ -356,6 +367,19 @@ def renderProjectiles(list): #this renders every projectile on the list
         projectile.updateWorld(-velocityX,-velocityY) #account for the world moving
         projectile.update()
         projectile.render(screen)
+
+def renderEnemy(list): #TO FIX - COLLISION WITH OBJECT MAKES ENEMY GO VROOM, IDK WHAT IS UP WITH THE X AND Y COORDS
+    global WorldVelocityX
+    global WorldVelocityY
+    global isMoving
+    for index, enemy in enumerate(list):
+            enemy.update(-WorldVelocityX,-WorldVelocityY)
+            enemy.setTrajectory((START_COORDSX,START_COORDSY))
+            enemy.render()
+            if ((world.getRelativeX() % TILE_SIZE) == 0 and keyUp):
+                WorldVelocityX = 0
+            if ((world.getRelativeY() % TILE_SIZE) == 0 and keyUp):
+                WorldVelocityY = 0
 #----------------------------------------------------------------------------------------------------------------------------------------#
 def inRadius(): #if the mouse is in a certain radius of the weapon, it will fire
     mousepos = pygame.mouse.get_pos()
@@ -409,6 +433,7 @@ while running:
             #not keydown is used to prevent strafing
             if key_pressed[K_d] and (not keyDown): 
                 velocityX = 4
+                WorldVelocityX = 4
                 direction = 1
                 lastDirection = 3
                 facingDirection = 3
@@ -420,6 +445,7 @@ while running:
 
             if key_pressed[K_a] and (not keyDown):
                 velocityX = -4
+                WorldVelocityX = -4
                 direction = -1
                 lastDirection = 4
                 facingDirection = 4
@@ -430,6 +456,7 @@ while running:
 
             if key_pressed[K_w] and (not keyDown):
                 velocityY = -4
+                WorldVelocityY = -4
                 direction = -1
                 lastDirection = 1
                 facingDirection = 1
@@ -440,6 +467,7 @@ while running:
 
             if key_pressed[K_s] and (not keyDown):
                 velocityY = 4
+                WorldVelocityY = -4
                 direction = 1
                 lastDirection = 2
                 facingDirection = 2
@@ -575,6 +603,7 @@ while running:
     drawItem(currentItem)
     if currentItem != None:
         currentItem.renderObject(screen)
+    renderEnemy(enemyList)
     renderProjectiles(projectileList)
     renderMelee(meleeList)
     #inventory logic
