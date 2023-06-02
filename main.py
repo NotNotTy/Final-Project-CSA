@@ -69,6 +69,7 @@ keyDown = False #boolean to use as conditional
 itemUse = False #boolean to use as conditional
 currentItem = None 
 previousItem = None
+collisionDetected = False
 running = True
 projectileList = []
 meleeList = []
@@ -120,11 +121,12 @@ def checkCollision(obj): #checks to see if theres a collision with obj and the w
     global direction
     global collisionKey
     global currentItem
+    global collisionDetected
     list = world.getObjectList()
     for row_index, row in enumerate(list[1]):
         if pygame.sprite.collide_rect(obj, row):
-            print(collisionKey)
             if (type(obj) == type(player1)):
+                collisionDetected = True
                 if (world.getRelativeX() % TILE_SIZE != 0):
                     if collisionKey == 1: #the D key
                         CollisionUpdateDirectionX(1)
@@ -140,6 +142,7 @@ def checkCollision(obj): #checks to see if theres a collision with obj and the w
             #elif (keyDown and world.getRelativeY() % TILE_SIZE != 0
             
             else:
+                
                 collisionKey = 0 #reset everything
                 keyDown = False
                 direction = 0
@@ -176,12 +179,17 @@ def player(): #draws the player
     global keyUp #if we let go of the movement keys
     global lastDirection
     global isMoving
+    global WorldVelocityX
+    global WorldVelocityY
+    global enemyList
     #print(pygame.mouse.get_pos())
     player1.updateSprite(lastDirection)
     player1.updateRelative(velocityX,velocityY) #here just to keep track of the player, is basically the asme thing as worldrelative
     world.updateRelative(velocityX,velocityY) #takes in user input and moves when held
     world.update_layout(-velocityX,velocityY) #takes in user input and moves when held
     all_sprites_list.update(-velocityX,-velocityY)#keep moving at speed until we are tile
+    if (velocityX != 0) or (velocityY != 0):
+        isMoving = True
     if ((world.getRelativeX() % TILE_SIZE) != 0 and keyUp): #if we are not on a tile and we are not holding a key, reajust to a tile
         isMoving = True
         velocityX = 0 #reset velocity to avoid extra inputs
@@ -189,6 +197,7 @@ def player(): #draws the player
         world.updateRelative(SPEED * direction,0) #keep moving at speed until we are tile
         player1.updateRelative(SPEED * direction,0)
         all_sprites_list.update(-SPEED  * direction,0)#keep moving at speed until we are tile
+        #updateEnemy(-SPEED  * direction,0)
     elif ((world.getRelativeY() % TILE_SIZE) != 0 and keyUp): #if we are not on a tile and we are not holding a key, reajust to a tile
         isMoving = True
         velocityY = 0  #reset velocity to avoid extra inputs
@@ -196,9 +205,19 @@ def player(): #draws the player
         world.updateRelative(0,SPEED * direction) #keep moving at speed until we are on a tile
         player1.updateRelative(0,SPEED * direction)
         all_sprites_list.update(0,-SPEED  * direction) #keep moving at speed until we are on a tile
+       #updateEnemy(0,-SPEED  * direction)
 
     else:
         isMoving = False
+        if not isMoving:
+            if ((world.getRelativeX() % TILE_SIZE) == 0 and keyUp): #used to update world velocity, becuase the regular one is solely for the player
+                    WorldVelocityX = 0
+                    #WorldVelocityY = 0
+            if ((world.getRelativeY() % TILE_SIZE) == 0 and keyUp):
+                    
+                    WorldVelocityY = 0
+                    #WorldVelocityX = 0
+                
         keyUp = False
         direction = 0
     all_sprites_list.draw(screen)
@@ -372,14 +391,23 @@ def renderEnemy(list): #TO FIX - COLLISION WITH OBJECT MAKES ENEMY GO VROOM, IDK
     global WorldVelocityX
     global WorldVelocityY
     global isMoving
+    global lastDirection
+    global collisionKey
+    global collisionDetected
+    #Only one of them can not equal zero at the same time
+    if collisionDetected: #if we are colliding with something, do not move the enemy
+        collisionDetected = False #this is still a little buggy, fix this'
+        WorldVelocityX = 0
+        WorldVelocityY = 0
     for index, enemy in enumerate(list):
             enemy.update(-WorldVelocityX,-WorldVelocityY)
-            enemy.setTrajectory((START_COORDSX,START_COORDSY))
+            enemy.setTrajectory((START_COORDSX,START_COORDSY),SPEED/2)
             enemy.render()
-            if ((world.getRelativeX() % TILE_SIZE) == 0 and keyUp):
-                WorldVelocityX = 0
-            if ((world.getRelativeY() % TILE_SIZE) == 0 and keyUp):
-                WorldVelocityY = 0
+
+def updateEnemy(list,x,y):
+    for index,enemy in enumerate(list):
+        enemy.update()
+
 #----------------------------------------------------------------------------------------------------------------------------------------#
 def inRadius(): #if the mouse is in a certain radius of the weapon, it will fire
     mousepos = pygame.mouse.get_pos()
@@ -431,7 +459,8 @@ while running:
         if event.type == pygame.KEYDOWN:
             key_pressed = pygame.key.get_pressed()
             #not keydown is used to prevent strafing
-            if key_pressed[K_d] and (not keyDown): 
+            if key_pressed[K_d] and (not keyDown) and (not isMoving): 
+                isMoving = True
                 velocityX = 4
                 WorldVelocityX = 4
                 direction = 1
@@ -443,7 +472,8 @@ while running:
                 get_tile()
              
 
-            if key_pressed[K_a] and (not keyDown):
+            if key_pressed[K_a] and (not keyDown)and (not isMoving):
+                isMoving = True
                 velocityX = -4
                 WorldVelocityX = -4
                 direction = -1
@@ -454,7 +484,8 @@ while running:
                 collisionKey = 2
                 get_tile()
 
-            if key_pressed[K_w] and (not keyDown):
+            if key_pressed[K_w] and (not keyDown)and (not isMoving):
+                isMoving = True
                 velocityY = -4
                 WorldVelocityY = -4
                 direction = -1
@@ -465,9 +496,10 @@ while running:
                 collisionKey = 3
                 get_tile()
 
-            if key_pressed[K_s] and (not keyDown):
+            if key_pressed[K_s] and (not keyDown) and (not isMoving):
+                isMoving = True
                 velocityY = 4
-                WorldVelocityY = -4
+                WorldVelocityY = 4
                 direction = 1
                 lastDirection = 2
                 facingDirection = 2
