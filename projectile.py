@@ -1,7 +1,7 @@
 import pygame
 
 class projectile:
-    def __init__(self,x,y,image,dmg,nx,ny,angle):
+    def __init__(self,x,y,image,dmg,nx,ny,angle,tag):
         self.image = pygame.Surface((64,64))
         self.image = pygame.image.load(image)
         self.rect = self.image.get_rect()
@@ -13,10 +13,16 @@ class projectile:
         self.ny = ny
         self.time = pygame.time.get_ticks()
         self.angle = angle
+        self.ID = tag
 
+    def getID(self):
+        return self.ID
     def set(self,x,y):
         self.x = x
         self.y = y
+
+    def getDamage(self):
+        return self.damage
 
     def update(self):
         self.x += self.nx

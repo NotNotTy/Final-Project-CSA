@@ -1,7 +1,7 @@
 import pygame
 
 class Player(pygame.sprite.Sprite):
-    def __init__(self, size, x ,y,surface):
+    def __init__(self, size, x ,y,surface,tag):
         super().__init__()
         self.image = pygame.Surface((size,size))
         self.image.fill('grey')
@@ -11,6 +11,7 @@ class Player(pygame.sprite.Sprite):
         self.relativeY = y
         self.cropped_region = (0,0,64,64)
         self.cropped_subsurf = self.image.subsurface(self.cropped_region)
+        self.ID = tag
 
     def update(self,x,y):
         self.rect.x += x
@@ -19,6 +20,9 @@ class Player(pygame.sprite.Sprite):
     def updateRelative(self,x,y):
         self.relativeX += x
         self.relativeY += y
+
+    def getDamage(self):
+        return 0
 
     def updateSprite(self, id):
         TILE_SIZE = 64
@@ -63,4 +67,7 @@ class Player(pygame.sprite.Sprite):
     
     def getY(self):
         return self.rect.y
+    
+    def getID(self):
+        return self.ID
     

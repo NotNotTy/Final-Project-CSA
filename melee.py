@@ -1,6 +1,6 @@
 import pygame
 class melee:
-    def __init__(self,x,y,image,dmg,nx,ny,angle):
+    def __init__(self,x,y,image,dmg,nx,ny,angle,tag):
         self.image = pygame.Surface((64,64))
         self.image = pygame.image.load(image)
         self.updatedImage = self.image
@@ -13,10 +13,24 @@ class melee:
         self.ny = ny
         self.time = pygame.time.get_ticks()
         self.angle = angle - 90
+        self.ID = tag
+        self.hit = False
 
+    def getID(self):
+        return self.ID
+
+    def updateHit(self,x):
+        self.hit = x
+
+    def getHit(self):
+        return self.hit
+    
     def set(self,x,y):
         self.x = x
         self.y = y
+
+    def getDamage(self):
+        return self.damage
 
     def getCurrentPosition(self):
         return [self.x,self.y]

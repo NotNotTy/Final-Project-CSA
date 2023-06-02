@@ -36,12 +36,12 @@ SPEED = 4 #speed of the player/world
 PROJECTILE_SPEED = 8
 TEXTBOX_SPRITE_WIDTH = 576 #used for translating the box in the middle
 world = world_creator(data,screen,START_COORDSX,START_COORDSY) #generates the world 
-player1 = Player(TILE_SIZE,START_COORDSX,START_COORDSY,playerImg)
+player1 = Player(TILE_SIZE,START_COORDSX,START_COORDSY,playerImg,"player")
 npc1 = NPC(TILE_SIZE,NPC_STARTCOORDSX,NPC_STARTCOORDSY,npcImg,'npc',False)
 npc2 = NPC(TILE_SIZE,NPC_STARTCOORDSX + 128,NPC_STARTCOORDSY,npcImg,'npc',False)
 textbox1 = textbox(TILE_SIZE,(LENGTH/2) - (384/2),player1.getY() + 7 * TILE_SIZE,textboxImg,'textbox',False)
 text = TextGenerator(START_COORDSX,START_COORDSY - 64,'press E to interact','freesansbold.ttf')
-testenemy = enemy("Sprites/character64.png",200,20,START_COORDSX + 64,START_COORDSY + 64,START_COORDSX,START_COORDSY,screen)
+testenemy = enemy("Sprites/character64.png",200,20,START_COORDSX + 640,START_COORDSY + 640,START_COORDSX,START_COORDSY,screen,"enemy")
 inventory = Inventory()
 all_sprites_list = pygame.sprite.Group()
 npc_sprite_list = pygame.sprite.Group()
@@ -122,9 +122,15 @@ def checkCollision(obj): #checks to see if theres a collision with obj and the w
     global collisionKey
     global currentItem
     global collisionDetected
+    global enemyList
+    global projectileList
+    global meleeList
+    global meleeSwung
+    global meleeInUse
+    global previousItem
     list = world.getObjectList()
     for row_index, row in enumerate(list[1]):
-        if pygame.sprite.collide_rect(obj, row):
+        if pygame.sprite.collide_rect(obj, row): #if anything collides with the enviromental obstacles
             if (type(obj) == type(player1)):
                 collisionDetected = True
                 if (world.getRelativeX() % TILE_SIZE != 0):
@@ -137,19 +143,28 @@ def checkCollision(obj): #checks to see if theres a collision with obj and the w
                         CollisionUpdateDirectionY(-1)
                     elif collisionKey == 4: #the S key
                         CollisionUpdateDirectionY(1)
-
-                    
-            #elif (keyDown and world.getRelativeY() % TILE_SIZE != 0
             
             else:
                 
                 collisionKey = 0 #reset everything
                 keyDown = False
                 direction = 0
-
-                if type(obj) != type(player1): #currently, the only other object it can be is a projectile
+                if obj.getID() == "projectile" or obj.getID() == "melee": #all objects will have a id system
                     return True
-            print(row.getType())
+    for index, enemy in enumerate(enemyList):
+        if pygame.sprite.collide_rect(enemy,obj):
+            if obj.getID() == "projectile":
+                projectileList.remove(obj)
+                enemy.updateHealth(-obj.getDamage())
+
+            if obj.getID() == "melee" and obj.getHit() == False:
+                enemy.updateHealth(-obj.getDamage())
+                obj.updateHit(True)
+
+            print(enemy.getHealth())
+            if enemy.getHealth() <= 0:
+                enemyList.remove(enemy)
+                
         
 
 
@@ -281,7 +296,7 @@ def projectileCreation(): #creates the projectiles
         angledegree = math.degrees(angle) * -1
         speed_x = PROJECTILE_SPEED * math.cos(angle)
         speed_y = PROJECTILE_SPEED * math.sin(angle)
-        projectileList.append(projectile(START_COORDSX,START_COORDSY,"Sprites/arrow64.png",64,speed_x,speed_y,angledegree)) #sprite is subjected to change
+        projectileList.append(projectile(START_COORDSX,START_COORDSY,"Sprites/arrow64.png",64,speed_x,speed_y,angledegree,"projectile")) #sprite is subjected to change
         projectileFired = False #so it runs only once
 
 def meleeCreation():
@@ -300,7 +315,7 @@ def meleeCreation():
         angledegree = math.degrees(angle) * -1
         speed_x = PROJECTILE_SPEED * math.cos(angle)
         speed_y = PROJECTILE_SPEED * math.sin(angle)
-        meleeList.append(melee(currentItem.getObjectX(),currentItem.getObjectY(),"Sprites/sword64rotated.png",TILE_SIZE,speed_x,speed_y,angledegree)) #sprite is subjected to change
+        meleeList.append(melee(currentItem.getObjectX(),currentItem.getObjectY(),"Sprites/sword64rotated.png",TILE_SIZE,speed_x,speed_y,angledegree,"melee")) #sprite is subjected to change
         meleeSwung = False #so it runs only once
         meleeInUse = True
         previousItem = currentItem
@@ -333,6 +348,7 @@ def renderMelee(list): #goal - CREATE A NEW MELEE CLASS THATS FOR MELEE, INDEPEN
             list.remove(melee)
             print("removed melee")
             currentItem = previousItem
+            melee.updateHit(False)
             previousItem = None
             meleeInUse = False
             break
@@ -341,6 +357,7 @@ def renderMelee(list): #goal - CREATE A NEW MELEE CLASS THATS FOR MELEE, INDEPEN
             list.remove(melee)
             print("removed melee")
             currentItem = previousItem
+            melee.updateHit(False)
             previousItem = None
             meleeInUse = False
             break
@@ -359,6 +376,7 @@ def renderMelee(list): #goal - CREATE A NEW MELEE CLASS THATS FOR MELEE, INDEPEN
                     currentItem = previousItem
                     previousItem = None
                     meleeInUse = False
+                    melee.updateHit(False)
                     break
                 melee.updateWorld(-velocityX,-velocityY) #account for the world moving
                 melee.updateOrientation()
@@ -400,6 +418,7 @@ def renderEnemy(list): #TO FIX - COLLISION WITH OBJECT MAKES ENEMY GO VROOM, IDK
         WorldVelocityX = 0
         WorldVelocityY = 0
     for index, enemy in enumerate(list):
+            #checkCollision(enemy)
             enemy.update(-WorldVelocityX,-WorldVelocityY)
             enemy.setTrajectory((START_COORDSX,START_COORDSY),SPEED/2)
             enemy.render()
