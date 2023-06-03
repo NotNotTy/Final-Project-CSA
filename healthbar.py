@@ -20,7 +20,7 @@ class healthbar:
 
     def update(self,startinghealth,currenthealth):
         percentage = currenthealth/startinghealth
-        if percentage == 1:
+        if percentage >= 1:
             self.green = pygame.Rect(self.x,self.y,self.width,self.height)
         else:
             difference = self.width * percentage

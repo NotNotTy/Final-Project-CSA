@@ -1,11 +1,11 @@
 import pygame
 import pygame.font
 class InventorySlot:
-    def __init__(self,itemID,image,item):
+    def __init__(self,itemID,image,item,amount):
         pygame.font.init()
         self.display = False
         self.itemID = itemID
-        self.amount = 0
+        self.amount = amount
         self.image = pygame.image.load(image)
         self.rect = self.image.get_rect()
         self.rect.topleft = (0, 64)
@@ -43,6 +43,9 @@ class InventorySlot:
     
     def updateAmount(self,x):
         self.amount += x
+
+    def getAmount(self):
+        return self.amount
     
     
 

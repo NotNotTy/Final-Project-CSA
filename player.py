@@ -12,6 +12,7 @@ class Player(pygame.sprite.Sprite):
         self.cropped_region = (0,0,64,64)
         self.cropped_subsurf = self.image.subsurface(self.cropped_region)
         self.ID = tag
+        self.startHealth = health
         self.health = health
         self.invul = False
         self.starttime = 0 #startime for invul
@@ -27,6 +28,8 @@ class Player(pygame.sprite.Sprite):
         #self.rect.y += y
 
     def updateHealth(self,x):
+        if (self.health + x > self.startHealth):
+            x = self.health + x - self.startHealth
         self.health += x
 
     def getHealth(self):

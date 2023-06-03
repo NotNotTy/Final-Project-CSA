@@ -364,7 +364,7 @@ def player(): #draws the player
     all_sprites_list.draw(screen)
     player1.render(screen) 
 
-def drawItem(item): #draws the used item
+def drawItem(item): #draws the used item and the direction it is facing in
     global projectileList
     global itemUse
     global currentItem
@@ -376,25 +376,25 @@ def drawItem(item): #draws the used item
          #due to flipping issues regarding size, some of the object's placement has been manually ajusted
          if facingDirection == 1: # north
             item.setObject(START_COORDSX,(START_COORDSY - TILE_SIZE * .75)) #the player will always be in the center of the screen
-            if item.getID() == "bow":
+            if item.getID() != "sword":
              (item.getObject()).changeOrientation(90)
             else:
              (item.getObject()).changeOrientation(0)
          elif facingDirection == 2: #south
              item.setObject(START_COORDSX,(START_COORDSY + TILE_SIZE/2)) 
-             if item.getID() == "bow":
+             if item.getID() != "sword":
                  (item.getObject()).changeOrientation(-90)
              else:
                 (item.getObject()).changeOrientation(-180)
          elif facingDirection == 3: #east
              item.setObject((START_COORDSX + TILE_SIZE/2),START_COORDSY) 
-             if item.getID() == "bow":
+             if item.getID() != "sword":
                  (item.getObject()).changeOrientation(0)
              else:
                 (item.getObject()).changeOrientation(-45)
          elif facingDirection == 4: #west
              item.setObject((START_COORDSX - TILE_SIZE * .75),START_COORDSY) 
-             if item.getID() == "bow":
+             if item.getID() != "sword":
                  (item.getObject()).changeOrientation(180)
              else:
                  (item.getObject()).changeOrientation(45)
@@ -762,7 +762,6 @@ while running:
             if key_pressed[K_e] and crateRadius == True:
                 for index, obj in enumerate(crateList):
                     if obj.getRange() == True:
-                        print(inventory)
                         obj.loot(inventory)
                         crateList.remove(obj)
                         crateRadius = False
@@ -790,6 +789,14 @@ while running:
                 else:
                     showAttackWarning = True
                     textCreation()
+
+            if event.button == 1 and currentItem != None and currentItem.getID() == "bandage":
+                player1.updateHealth(20)
+                currentItem.updateAmount(-1)
+                if currentItem.getAmount() <= 0:
+                    currentItem = None
+                    Item = None
+
 
             #death button logic
             if event.button == 1 and endGame() == True and deathMessage.getExitRect().collidepoint(mousePos):
