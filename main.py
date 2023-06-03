@@ -44,7 +44,7 @@ player1 = None
 npc1 = None
 npc2 = None
 textbox1 = None
-text = TextGenerator(START_COORDSX,START_COORDSY - 64,'press E to interact','freesansbold.ttf')
+text = TextGenerator(START_COORDSX,START_COORDSY - 64,'press E to interact','freesansbold.ttf',pygame.time.get_ticks(),"radius") #temp is when it'll disappear after blank time, radius will show if in range
 deathMessage = deathScreen("Sprites/playagain.png","Sprites/exit.png","Sprites/deathScreen.png")
 testenemy = None
 healthbarIcon = None
@@ -77,7 +77,11 @@ running = True
 projectileList = []
 meleeList = []
 enemyList = []
+textList = []
 enemyList.append(testenemy)
+enemyKilled = False
+showInteraction = False
+NPCRadius = False
 startGameBool = True
 
 
@@ -89,9 +93,9 @@ startGameBool = True
 def startGame(): #used to start the game, also used to reset the game if the player dies. This assigns properties to all the variables needed
     global startGameBool
     if startGameBool:
-        global player1,npc1,npc2,world,healthbarIcon,all_sprites_list,npc_sprite_list,projectileList,meleeList,enemyList,textbox1,textbox_sprite_list
-        global velocityX,velocityY,isMoving,WorldVelocityX,WorldVelocityY,direction,lastDirection,facingDirection
-        global keyUp, collisionKey,projectileFired,meleeSwung,meleeInUse,showAttackWarning,keyDown,itemUse,previousItem,collisionDetected,running,change,currentItem
+        global player1,npc1,npc2,world,healthbarIcon,all_sprites_list,npc_sprite_list,projectileList,meleeList,enemyList,textbox1,textbox_sprite_list,textList
+        global velocityX,velocityY,isMoving,WorldVelocityX,WorldVelocityY,direction,lastDirection,facingDirection,showInteraction,NPCRadius
+        global keyUp, collisionKey,projectileFired,meleeSwung,meleeInUse,showAttackWarning,keyDown,itemUse,previousItem,collisionDetected,running,change,currentItem,enemyKilled
         world = world_creator(data,screen,START_COORDSX,START_COORDSY) #generates the world 
         player1 = Player(TILE_SIZE,START_COORDSX,START_COORDSY,playerImg,"player",PLAYER_STARTING_HEALTH)
         npc1 = NPC(TILE_SIZE,NPC_STARTCOORDSX,NPC_STARTCOORDSY,npcImg,'npc',False)
@@ -115,10 +119,10 @@ def startGame(): #used to start the game, also used to reset the game if the pla
         lastDirection = 2 #this direction will never reset. Either be north south esat or west
         facingDirection = 2 #where the character is currently facing, either north,south,east,or west. 1 - North, 2 - South, 3 - East, 4 - West
         keyUp = False
-        collisionKey = 0
-        projectileFired = False #if its true, a segment of code will run
-        meleeSwung = False #if true, a segment of code will run
-        meleeInUse = False
+        collisionKey = 0 #check direction of collision
+        projectileFired = False #if its true, a segment of code will run to update projectile
+        meleeSwung = False #if true, a segment of code will run to update melee
+        meleeInUse = False #so multiple melees cannot be used at once
         showAttackWarning = False #if you try to use your weapon out of radius, this will update
         change = True
         keyDown = False #boolean to use as conditional
@@ -130,6 +134,10 @@ def startGame(): #used to start the game, also used to reset the game if the pla
         projectileList = []
         meleeList = []
         enemyList = []
+        textList = []
+        enemyKilled = False
+        showInteraction = False
+        NPCRadius = False #if we are in range of an NPC
         enemyList.append(testenemy)
         startGameBool = False
 
@@ -180,6 +188,7 @@ def checkCollision(obj): #checks to see if theres a collision with obj and the w
     global meleeSwung
     global meleeInUse
     global previousItem
+    global enemyKilled
     list = world.getObjectList()
     for row_index, row in enumerate(list[1]):
         if pygame.sprite.collide_rect(obj, row): #if anything collides with the enviromental obstacles
@@ -205,16 +214,23 @@ def checkCollision(obj): #checks to see if theres a collision with obj and the w
                 direction = 0
                 if obj.getID() == "projectile" or obj.getID() == "melee": #all objects will have a id system
                     return True
+    #Enemy damage code
     for index, enemy in enumerate(enemyList):
         if pygame.sprite.collide_rect(enemy,obj):
-            if obj.getID() == "projectile":
+            if obj.getID() == "projectile": #if the enemy was hit by a projectile
                 if obj in projectileList:
-                    projectileList.remove(obj)
-                enemy.updateHealth(-obj.getDamage())
+                    projectileList.remove(obj) #remove that projectile
+                enemy.updateHealth(-obj.getDamage()) #update enemy health
+                if enemy.getHealth() <= 0: #if the health is less than 0, display a kill message
+                    enemyKilled = True
+                    textCreation()
 
             if obj.getID() == "melee" and obj.getHit() == False:
                 enemy.updateHealth(-obj.getDamage())
                 obj.updateHit(True)
+                if enemy.getHealth() <= 0:
+                    enemyKilled = True
+                    textCreation()
 
             if obj.getID() == "player":
                 #invulnurbility/damage code
@@ -242,14 +258,24 @@ def collision(): #checks if theres a collision
 
 
 def interactable(): #loops through every collideable object
-    for row in enumerate(npc_sprite_list):
-         if pygame.sprite.collide_rect(player1, row[1]):
-            text.updateRect(player1.getX(),player1.getY()-TILE_SIZE)
-            screen.blit(text.getText(),text.getTextRect())
-            row[1].editRange(True)
+    global showInteraction
+    global NPCRadius
+    for index,npc in enumerate(npc_sprite_list):
+         if pygame.Rect.colliderect(player1.getRect(),npc.getHitboxRect()):
+            NPCRadius = True
+            if showInteraction == True:
+                pass
+            elif showInteraction == False and npc.getRange() == True: #if show interaction is false, but we are in range of an npc
+                pass
+            else:
+                showInteraction = True
+                textCreation()
+            npc.editRange(True)
             #print(row[1].getRange())
          else:
-             row[1].editRange(False)
+             if npc.getRange() == True:
+                 NPCRadius = False
+             npc.editRange(False)
              #print(row[1].getRange())
 
 #--------------------------------------------------------WORLD UPDATING------------------------------------------------------#
@@ -388,19 +414,37 @@ def meleeCreation():
 
 def textCreation():
     global showAttackWarning
-    if showAttackWarning:
-        text2 = TextGenerator(player1.getRelativeX(),player1.getRelativeY() - 32, 'You cannot use your weapon behind you!', 'freesansbold.ttf')
-        renderText(text2)
+    global textList
+    global enemyKilled
+    global showInteraction
+    currentTime = pygame.time.get_ticks()
+    if showInteraction:
+        textList.append(TextGenerator(player1.getRelativeX(),player1.getRelativeY() - 32,'press E to interact','freesansbold.ttf',currentTime,"radius"))
+        showInteraction = False
+    if showAttackWarning and not NPCRadius:
+        textList.append(TextGenerator(player1.getRelativeX(),player1.getRelativeY() - 32, 'You cannot use your weapon behind you!', 'freesansbold.ttf',currentTime,"temp"))
+        showAttackWarning = False
+    if enemyKilled and not NPCRadius:
+        textList.append(TextGenerator(player1.getRelativeX(),player1.getRelativeY() - 32, 'You have killed an enemy!', 'freesansbold.ttf',currentTime,"temp"))
+        enemyKilled = False
 #----------------------------------------------------------------------------------------------------------------------#
 
 
 #------------------------------------------RENDERING SECTION--------------------------------------------------------------------------------
-def renderText(text): #function used to render all text
+def renderText(list): #function used to render all text
     global velocityX
     global velocityY
-    if showAttackWarning:
-        text.update(-velocityX,-velocityY)
-        text.render(screen,player1.getRelativeX(), player1.getRelativeY())
+    global showInteraction
+    global NPCRadius
+    radiusActive = False
+    for index, text in enumerate(list):
+        if text.getID() == "radius":
+            if NPCRadius == False:
+                textList.remove(text)
+        if text.getID() == "temp":
+            if pygame.time.get_ticks() - text.getTime() >= 1000: #1 sec
+                list.remove(text)
+        text.render(screen,player1.getX()-TILE_SIZE,player1.getY()-TILE_SIZE)
 
 
 def renderMelee(list): #goal - CREATE A NEW MELEE CLASS THATS FOR MELEE, INDEPENDENT OF THE ITEM CLASS
@@ -673,6 +717,7 @@ while running:
                     showAttackWarning = False
                 else:
                     showAttackWarning = True
+                    textCreation()
 
             #death button logic
             if event.button == 1 and endGame() == True and deathMessage.getExitRect().collidepoint(mousePos):
@@ -753,7 +798,7 @@ while running:
         deathMessage.render(screen)
     else:
         isInteractable() #checks if we are in range of npcs
-        world.run(textbox_sprite_list) #generates the world
+        world.run() #generates the world
         collision() #checks if anything is colldiing
         player() #renders player and player logic
         drawItem(currentItem) #draws any item in used
@@ -763,6 +808,7 @@ while running:
         renderProjectiles(projectileList) #render projectile
         renderMelee(meleeList) #render melee
         renderHealthbar() #render healthnar
+        renderText(textList)
         #inventory logic
         if inventory.getStatus():
             inventory.render(screen)

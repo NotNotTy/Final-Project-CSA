@@ -23,6 +23,8 @@ class Player(pygame.sprite.Sprite):
     def updateRelative(self,x,y):
         self.relativeX += x
         self.relativeY += y
+        #self.rect.x += x
+        #self.rect.y += y
 
     def updateHealth(self,x):
         self.health += x
@@ -39,7 +41,8 @@ class Player(pygame.sprite.Sprite):
     def setStartTime(self,starttime):
         self.starttime = starttime
 
-
+    def getRect(self):
+        return self.rect
 
     def getInvulurbility(self):
         return self.invul

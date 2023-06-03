@@ -63,20 +63,14 @@ class world_creator: #constructs the world
     def getRelativeY(self):
         return self.relativePositionY
     
-    def run(self,textbox):
-        for row_index, row in enumerate(textbox):
-            if row.getStatus() == True:
-                self.plain_layout_sprite.draw(self.display_surface) #draws the tile group on said surface
-                self.rock_layout_sprite.draw(self.display_surface) #draws the tile group on said surface
-                textbox.draw(self.display_surface)
-            else:
-                self.plain_layout_sprite.draw(self.display_surface) #draws the tile group on said surface
-                self.rock_layout_sprite.draw(self.display_surface) #draws the tile group on said surface
+    def run(self):
+ 
+        self.plain_layout_sprite.draw(self.display_surface) #draws the tile group on said surface
+        self.rock_layout_sprite.draw(self.display_surface) #draws the tile group on said surface
         #self.plain_layout_sprite.draw(self.display_surface) #draws the tile group on said surface
         #self.rock_layout_sprite.draw(self.display_surface) #draws the tile group on said surface
 
         #self.layout_sprite.update(1)
-        pass
 
     def update_layout(self,x,y):
        self.plain_layout_sprite.update(x,y)

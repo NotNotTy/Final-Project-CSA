@@ -3,15 +3,23 @@ from pygame.locals import *
 class TextGenerator():
     pygame.font.init()
 
-    def __init__(self, x, y, t,f):
+    def __init__(self, x, y, t,f,time,id):
         self.font = pygame.font.Font(f, 16)
         self.text = self.font.render(t, True,0)
         self.rect = self.text.get_rect(topleft = (x,y))
         self.x = x
         self.y = y
+        self.time = time
+        self.ID = id
     
     def getText(self):
         return self.text
+    
+    def getID(self):
+        return self.ID
+    
+    def getTime(self):
+        return self.time
 
     def editText(self, t):
         text = t
