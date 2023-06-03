@@ -30,3 +30,6 @@ class StaticTile(Tile):
     def getType(self):
         return self.type
 
+    def getRect(self):
+        return self.rect
+

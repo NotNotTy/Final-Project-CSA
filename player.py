@@ -1,7 +1,7 @@
 import pygame
 
 class Player(pygame.sprite.Sprite):
-    def __init__(self, size, x ,y,surface,tag):
+    def __init__(self, size, x ,y,surface,tag,health):
         super().__init__()
         self.image = pygame.Surface((size,size))
         self.image.fill('grey')
@@ -12,6 +12,9 @@ class Player(pygame.sprite.Sprite):
         self.cropped_region = (0,0,64,64)
         self.cropped_subsurf = self.image.subsurface(self.cropped_region)
         self.ID = tag
+        self.health = health
+        self.invul = False
+        self.starttime = 0 #startime for invul
 
     def update(self,x,y):
         self.rect.x += x
@@ -21,8 +24,28 @@ class Player(pygame.sprite.Sprite):
         self.relativeX += x
         self.relativeY += y
 
+    def updateHealth(self,x):
+        self.health += x
+
+    def getHealth(self):
+        return self.health
+
     def getDamage(self):
         return 0
+    
+    def setInvulurbility(self,x):
+        self.invul = x
+
+    def setStartTime(self,starttime):
+        self.starttime = starttime
+
+
+
+    def getInvulurbility(self):
+        return self.invul
+    
+    def getTime(self):
+        return self.starttime
 
     def updateSprite(self, id):
         TILE_SIZE = 64

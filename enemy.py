@@ -21,28 +21,32 @@ class enemy:
         self.percantage = 0
         self.width = 64
         self.height = 20
+        self.vision = 1
+        self.visionStatus = False
+        self.obstacle = None
 
     def render(self):
         self.screen.blit(self.image,(self.x,self.y))
-        pygame.draw.rect(self.screen,(0,255,0),self.green)
         pygame.draw.rect(self.screen,(255,0,0),self.red)
+        pygame.draw.rect(self.screen,(0,255,0),self.green)
         #self.eyesightRect
         #display.blit(self.image,(self.x,self.y))
 
     def update(self,x,y):
         #print(self.x)
-        self.x += self.nx + x
-        self.y += self.ny + y
+        self.x += (self.nx * self.vision) + x
+        self.y += (self.ny * self.vision) + y
         self.percantage = self.health/self.startinghealth
         #self.rect = self.rect.move(self.nx,self.ny)
-        self.green = pygame.Rect(self.x,self.y+self.width,self.width,self.height )
+        self.green = pygame.Rect(self.x,self.y+self.width,self.width,self.height)
         self.red = pygame.Rect(self.x,self.y+self.width,self.width,self.height )
         self.rect= self.rect.clamp(pygame.Rect(self.x,self.y,64,64)) #clamp allowed me to clamp the rect to the enemy
         if self.percantage == 1:
-            self.red = pygame.Rect(self.x,self.y+self.width,0,self.height )
+            self.green = pygame.Rect(self.x,self.y + self.width,self.width,self.height )
         else:
             print(64 * self.percantage)
-            self.red = pygame.Rect(self.x,self.y+self.width,self.width - (self.width * self.percantage),self.height)
+            difference = self.width * self.percantage
+            self.green = pygame.Rect(self.x,self.y + self.width,difference,self.height)
        
     def getID(self):
         return self.ID
@@ -52,9 +56,22 @@ class enemy:
     
     def updateHealth(self, x):
         self.health += x
+
+    def getDamage(self):
+        return self.damage
     
-    def setTrajectory(self,end,speed): #draws a line, if the line collides with something, then stop
-        self.eyesightRect = pygame.draw.line(self.screen,(0,0,0),(self.x,self.y),end,10)
+    def setTrajectory(self,end,speed,objList): #draws a line, if the line collides with something, then stop
+        self.eyesightRect = pygame.draw.line(self.screen,(0,0,0),(self.x + 32,self.y + 32),(end[0] + 32,end[1] + 32),1)
+        if self.obstacle != None:
+            if not pygame.Rect.colliderect(self.obstacle.getRect(),self.eyesightRect): #if we are not colliding with the same object again
+                self.vision = 1
+                self.visionStatus = True
+        for index, obj in enumerate(objList[1]):
+            if pygame.Rect.colliderect(obj.getRect(),self.eyesightRect):
+                self.vision = 0
+                self.visionStatus = False
+                self.obstacle = obj
+
         distance_y = self.y - end[1]
         distance_x = self.x - end[0]
         angle = math.atan2(distance_y, distance_x)

@@ -1,5 +1,6 @@
 import pygame
 import math
+import random
 from pygame.locals import *
 from sys import exit
 from World import world_creator
@@ -13,6 +14,7 @@ from projectile import projectile
 from melee import melee
 from enemy import enemy
 from fractions import Fraction
+from healthbar import healthbar
 pygame.init()
 pygame.font.init()
 LENGTH = 1216
@@ -35,13 +37,15 @@ TEXTBOX_COORDSY = 100
 SPEED = 4 #speed of the player/world
 PROJECTILE_SPEED = 8
 TEXTBOX_SPRITE_WIDTH = 576 #used for translating the box in the middle
+PLAYER_STARTING_HEALTH = 200
 world = world_creator(data,screen,START_COORDSX,START_COORDSY) #generates the world 
-player1 = Player(TILE_SIZE,START_COORDSX,START_COORDSY,playerImg,"player")
+player1 = Player(TILE_SIZE,START_COORDSX,START_COORDSY,playerImg,"player",PLAYER_STARTING_HEALTH)
 npc1 = NPC(TILE_SIZE,NPC_STARTCOORDSX,NPC_STARTCOORDSY,npcImg,'npc',False)
 npc2 = NPC(TILE_SIZE,NPC_STARTCOORDSX + 128,NPC_STARTCOORDSY,npcImg,'npc',False)
 textbox1 = textbox(TILE_SIZE,(LENGTH/2) - (384/2),player1.getY() + 7 * TILE_SIZE,textboxImg,'textbox',False)
 text = TextGenerator(START_COORDSX,START_COORDSY - 64,'press E to interact','freesansbold.ttf')
 testenemy = enemy("Sprites/character64.png",200,20,START_COORDSX + 640,START_COORDSY + 640,START_COORDSX,START_COORDSY,screen,"enemy")
+healthbarIcon = healthbar("Sprites/hpbar.png",LENGTH - (TILE_SIZE * 5),WIDTH - TILE_SIZE/2,TILE_SIZE * 5, TILE_SIZE/2) #currently the bar is (64*5,32)
 inventory = Inventory()
 all_sprites_list = pygame.sprite.Group()
 npc_sprite_list = pygame.sprite.Group()
@@ -91,7 +95,7 @@ enemyList.append(testenemy)
 
 #----------------------------------------------------------COLLISION---------------------------------------------#
 #manually updates the direction based on the parameters
-def CollisionUpdateDirectionX(r):
+def CollisionUpdateDirectionX(r): #used for obj collision
     global direction
     global velocityX
     direction = r
@@ -104,7 +108,7 @@ def CollisionUpdateDirectionX(r):
     all_sprites_list.update(SPEED  * direction,0)#keep moving at speed until we are tile
 
 #manually updates the direction based on the parameters
-def CollisionUpdateDirectionY(r):
+def CollisionUpdateDirectionY(r): #used for obj collision
     global direction
     global velocityY
     velocityY = 0
@@ -131,7 +135,7 @@ def checkCollision(obj): #checks to see if theres a collision with obj and the w
     list = world.getObjectList()
     for row_index, row in enumerate(list[1]):
         if pygame.sprite.collide_rect(obj, row): #if anything collides with the enviromental obstacles
-            if (type(obj) == type(player1)):
+            if (type(obj) == type(player1)) or obj.getID() == "enemy":
                 collisionDetected = True
                 if (world.getRelativeX() % TILE_SIZE != 0):
                     if collisionKey == 1: #the D key
@@ -143,6 +147,8 @@ def checkCollision(obj): #checks to see if theres a collision with obj and the w
                         CollisionUpdateDirectionY(-1)
                     elif collisionKey == 4: #the S key
                         CollisionUpdateDirectionY(1)
+
+            
             
             else:
                 
@@ -154,14 +160,26 @@ def checkCollision(obj): #checks to see if theres a collision with obj and the w
     for index, enemy in enumerate(enemyList):
         if pygame.sprite.collide_rect(enemy,obj):
             if obj.getID() == "projectile":
-                projectileList.remove(obj)
+                if obj in projectileList:
+                    projectileList.remove(obj)
                 enemy.updateHealth(-obj.getDamage())
 
             if obj.getID() == "melee" and obj.getHit() == False:
                 enemy.updateHealth(-obj.getDamage())
                 obj.updateHit(True)
 
-            print(enemy.getHealth())
+            if obj.getID() == "player":
+                #invulnurbility/damage code
+                if player1.getInvulurbility():
+                    if (pygame.time.get_ticks() - player1.getTime()) >= 1000:  #if we have been invulnurble for 1 seconds
+                        player1.setInvulurbility(False)
+                        player1.setStartTime(0)
+
+                if not player1.getInvulurbility():
+                    player1.updateHealth(-enemy.getDamage())
+                    player1.setInvulurbility(True)
+                    player1.setStartTime(pygame.time.get_ticks())
+            
             if enemy.getHealth() <= 0:
                 enemyList.remove(enemy)
                 
@@ -420,12 +438,15 @@ def renderEnemy(list): #TO FIX - COLLISION WITH OBJECT MAKES ENEMY GO VROOM, IDK
     for index, enemy in enumerate(list):
             #checkCollision(enemy)
             enemy.update(-WorldVelocityX,-WorldVelocityY)
-            enemy.setTrajectory((START_COORDSX,START_COORDSY),SPEED/2)
+            enemy.setTrajectory([START_COORDSX,START_COORDSY],SPEED/2,world.getObjectList())
             enemy.render()
 
-def updateEnemy(list,x,y):
-    for index,enemy in enumerate(list):
-        enemy.update()
+def renderHealthbar():
+    global screen
+    global healthbarIcon
+    global player1
+    healthbarIcon.update(PLAYER_STARTING_HEALTH,player1.getHealth())
+    healthbarIcon.render(screen)
 
 #----------------------------------------------------------------------------------------------------------------------------------------#
 def inRadius(): #if the mouse is in a certain radius of the weapon, it will fire
@@ -464,6 +485,20 @@ def get_tile(): #returns the coordinate position of the player
     #print(playerXRelative//TILE_SIZE,playerYRelative//TILE_SIZE)
     #print(playerXRelative,playerYRelative)
     print(coords)
+
+
+def spawn_enemy():
+    global enemyList
+    global world
+    list = world.getObjectList()
+    xcoords = random.randrange(0,LENGTH)
+    ycoords = random.randrange(0,WIDTH)
+    for index,obj in enumerate(list[1]):
+        if obj.get_coords() == [xcoords,ycoords]:
+            while obj.get_coords() == [xcoords,ycoords]:
+                xcoords = random.randrange(0,LENGTH)
+                ycoords = random.randrange(0,WIDTH)
+    enemyList.append(enemy("Sprites/character64.png",200,20,xcoords,ycoords,START_COORDSX,START_COORDSY,screen,"enemy"))
             
 
 while running:
@@ -471,6 +506,9 @@ while running:
 
     clock.tick(60)
     #screen.fill((0,0,0))
+    #print(pygame.time.get_ticks() % 10000)
+    if (pygame.time.get_ticks() % 10000 >= 0)and (pygame.time.get_ticks() % 10000 <= 20): #for every 10 seconds, spawn an enemy
+        spawn_enemy()
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
@@ -649,6 +687,7 @@ while running:
     screen.fill('blue')
     #loads the world first, then checks for collison, then loads player logic, then loads in items. Lastly, it will load in projectile
     world.run(textbox_sprite_list)
+    renderHealthbar()
     collision()
     player()
     drawItem(currentItem)
