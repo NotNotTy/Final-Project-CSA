@@ -480,14 +480,16 @@ def spawn_enemy():
     global enemyList
     global world
     list = world.getObjectList()
-    xcoords = random.randrange(0,LENGTH)
-    ycoords = random.randrange(0,WIDTH)
-    for index,obj in enumerate(list[1]):
-        if obj.get_coords() == [xcoords,ycoords]:
-            while obj.get_coords() == [xcoords,ycoords]:
-                xcoords = random.randrange(0,LENGTH)
-                ycoords = random.randrange(0,WIDTH)
-    enemyList.append(enemy("Sprites/character64.png",200,20,xcoords,ycoords,START_COORDSX,START_COORDSY,screen,"enemy"))
+    num = random.randrange(1,5) #chooses a random number of enemy to spawn
+    for i in range(num):
+        xcoords = random.randrange(TILE_SIZE* -27,(59 - 27) * TILE_SIZE,TILE_SIZE)
+        ycoords = random.randrange(TILE_SIZE -27, (59 - 27) * TILE_SIZE,TILE_SIZE)
+        for index,obj in enumerate(list[1]):
+            if obj.get_coords() == [xcoords,ycoords]:
+                while obj.get_coords() == [xcoords,ycoords]:
+                    xcoords = random.randrange(TILE_SIZE* -27,(59 - 27) * TILE_SIZE,TILE_SIZE)  #Note, the multipler MUST BE WHATEVER THE WORLD MULTIPLIER IS in World.py
+                    ycoords = random.randrange(TILE_SIZE -27, (59 - 27) * TILE_SIZE,TILE_SIZE) #Second Note, the end condition must be one less the world width subtracted by multiplier
+        enemyList.append(enemy("Sprites/character64.png",200,20,xcoords,ycoords,START_COORDSX,START_COORDSY,screen,"enemy"))
 #----------------------------------------------------------------------------------------------------------------------#
 
 
