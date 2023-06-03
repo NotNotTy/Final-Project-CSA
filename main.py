@@ -15,8 +15,10 @@ from melee import melee
 from enemy import enemy
 from fractions import Fraction
 from healthbar import healthbar
+from deathScreen import deathScreen
 pygame.init()
 pygame.font.init()
+#------------------------CONSTANTS---------------------------------
 LENGTH = 1216
 WIDTH = 704
 screen = pygame.display.set_mode((LENGTH,WIDTH)) #a single tile is 32 by 32, entire map is 60x60 tiles
@@ -26,8 +28,6 @@ textboxImg = pygame.image.load("Sprites/textbox2.png")
 clock = pygame.time.Clock() #clock
 TILE_SIZE = 64 #each tile is 32x32 big
 FPS = 60 #pretty self explainitory
-#CAMERA_EDGE_X = LENGTH -  (TILE_SIZE * 1) #the edges are where the world will start to shift to give the impression that the camera is following the player. Multipler 8 
-#CAMERA_EDGE_Y = WIDTH - (TILE_SIZE * 1) # 4
 START_COORDSX = 512 #start coordinates, used to keep the original position in a constant
 START_COORDSY = 320
 NPC_STARTCOORDSX = 768
@@ -38,22 +38,21 @@ SPEED = 4 #speed of the player/world
 PROJECTILE_SPEED = 8
 TEXTBOX_SPRITE_WIDTH = 576 #used for translating the box in the middle
 PLAYER_STARTING_HEALTH = 200
-world = world_creator(data,screen,START_COORDSX,START_COORDSY) #generates the world 
-player1 = Player(TILE_SIZE,START_COORDSX,START_COORDSY,playerImg,"player",PLAYER_STARTING_HEALTH)
-npc1 = NPC(TILE_SIZE,NPC_STARTCOORDSX,NPC_STARTCOORDSY,npcImg,'npc',False)
-npc2 = NPC(TILE_SIZE,NPC_STARTCOORDSX + 128,NPC_STARTCOORDSY,npcImg,'npc',False)
-textbox1 = textbox(TILE_SIZE,(LENGTH/2) - (384/2),player1.getY() + 7 * TILE_SIZE,textboxImg,'textbox',False)
+#----------------------------VARIABLE INITALIZATION---------------------------#
+world = None
+player1 = None
+npc1 = None
+npc2 = None
+textbox1 = None
 text = TextGenerator(START_COORDSX,START_COORDSY - 64,'press E to interact','freesansbold.ttf')
-testenemy = enemy("Sprites/character64.png",200,20,START_COORDSX + 640,START_COORDSY + 640,START_COORDSX,START_COORDSY,screen,"enemy")
-healthbarIcon = healthbar("Sprites/hpbar.png",LENGTH - (TILE_SIZE * 5),WIDTH - TILE_SIZE/2,TILE_SIZE * 5, TILE_SIZE/2) #currently the bar is (64*5,32)
+deathMessage = deathScreen("Sprites/playagain.png","Sprites/exit.png","Sprites/deathScreen.png")
+testenemy = None
+healthbarIcon = None
 inventory = Inventory()
-all_sprites_list = pygame.sprite.Group()
-npc_sprite_list = pygame.sprite.Group()
-textbox_sprite_list = pygame.sprite.Group()
+all_sprites_list = None
+npc_sprite_list = None
+textbox_sprite_list = None
 #all_sprites_list.add(player1)
-all_sprites_list.add(npc1,npc2)
-npc_sprite_list.add(npc1,npc2)
-textbox_sprite_list.add(textbox1)
 velocityX = 0
 velocityY = 0
 isMoving = False
@@ -79,17 +78,66 @@ projectileList = []
 meleeList = []
 enemyList = []
 enemyList.append(testenemy)
+startGameBool = True
 
 
 
 
 
 
-#def updateSmooth():
-    #player1.update(2,0)
-    #all_sprites_list.draw(screen)
-    
-    #pygame.time.delay(500)
+#----------------------------------------------GAME INITALIZATION/GAME DEATH----------------------------------#
+def startGame(): #used to start the game, also used to reset the game if the player dies. This assigns properties to all the variables needed
+    global startGameBool
+    if startGameBool:
+        global player1,npc1,npc2,world,healthbarIcon,all_sprites_list,npc_sprite_list,projectileList,meleeList,enemyList,textbox1,textbox_sprite_list
+        global velocityX,velocityY,isMoving,WorldVelocityX,WorldVelocityY,direction,lastDirection,facingDirection
+        global keyUp, collisionKey,projectileFired,meleeSwung,meleeInUse,showAttackWarning,keyDown,itemUse,previousItem,collisionDetected,running,change,currentItem
+        world = world_creator(data,screen,START_COORDSX,START_COORDSY) #generates the world 
+        player1 = Player(TILE_SIZE,START_COORDSX,START_COORDSY,playerImg,"player",PLAYER_STARTING_HEALTH)
+        npc1 = NPC(TILE_SIZE,NPC_STARTCOORDSX,NPC_STARTCOORDSY,npcImg,'npc',False)
+        npc2 = NPC(TILE_SIZE,NPC_STARTCOORDSX + 128,NPC_STARTCOORDSY,npcImg,'npc',False)
+        textbox1 = textbox(TILE_SIZE,(LENGTH/2) - (384/2),player1.getY() + 7 * TILE_SIZE,textboxImg,'textbox',False)
+        testenemy = enemy("Sprites/character64.png",200,20,START_COORDSX + 640,START_COORDSY + 640,START_COORDSX,START_COORDSY,screen,"enemy")
+        healthbarIcon = healthbar("Sprites/hpbar.png",LENGTH - (TILE_SIZE * 5),WIDTH - TILE_SIZE/2,TILE_SIZE * 5, TILE_SIZE/2) #currently the bar is (64*5,32)
+        all_sprites_list = pygame.sprite.Group()
+        npc_sprite_list = pygame.sprite.Group()
+        textbox_sprite_list = pygame.sprite.Group()
+        #all_sprites_list.add(player1)
+        all_sprites_list.add(npc1,npc2)
+        npc_sprite_list.add(npc1,npc2)
+        textbox_sprite_list.add(textbox1)
+        velocityX = 0
+        velocityY = 0
+        isMoving = False
+        WorldVelocityX = 0 #since velocityX and velocityY are resetted to zero to account for player movement, this is used for the rest of the World
+        WorldVelocityY = 0
+        direction = 0 #WASD directions. D and W are positive, A and S are negative
+        lastDirection = 2 #this direction will never reset. Either be north south esat or west
+        facingDirection = 2 #where the character is currently facing, either north,south,east,or west. 1 - North, 2 - South, 3 - East, 4 - West
+        keyUp = False
+        collisionKey = 0
+        projectileFired = False #if its true, a segment of code will run
+        meleeSwung = False #if true, a segment of code will run
+        meleeInUse = False
+        showAttackWarning = False #if you try to use your weapon out of radius, this will update
+        change = True
+        keyDown = False #boolean to use as conditional
+        itemUse = False #boolean to use as conditional
+        currentItem = None 
+        previousItem = None
+        collisionDetected = False
+        running = True
+        projectileList = []
+        meleeList = []
+        enemyList = []
+        enemyList.append(testenemy)
+        startGameBool = False
+
+def endGame():
+    global player1
+    if player1.getHealth() <= 0:
+        return True
+
 
 
 
@@ -479,6 +527,18 @@ def inRadius(): #if the mouse is in a certain radius of the weapon, it will fire
     print(angledegree)
     return False
 
+def isInteractable():
+    global npc_sprite_list
+    for row in enumerate(npc_sprite_list):
+        if row[1].getRange() == True: #if we are in range of a npc
+            if key_pressed[K_e]: #if the interact key is pressed
+                for row in enumerate(npc_sprite_list):
+                    if row[1].getRange(): #find the curernt npc thats being interacted with 
+                        textbox1.updateStatus(True) #update the box to show
+            break #dont go to other conditional after
+        else: 
+            textbox1.updateStatus(False) #textbox defaults off
+
 
 def get_tile(): #returns the coordinate position of the player
     coords = [(player1.getRelativeX() - START_COORDSX)//TILE_SIZE,(player1.getRelativeY()-START_COORDSY)//TILE_SIZE]
@@ -516,7 +576,7 @@ while running:
         if event.type == pygame.KEYDOWN:
             key_pressed = pygame.key.get_pressed()
             #not keydown is used to prevent strafing
-            if key_pressed[K_d] and (not keyDown) and (not isMoving): 
+            if key_pressed[K_d] and (not keyDown) and (not isMoving) and velocityX == 0: 
                 isMoving = True
                 velocityX = 4
                 WorldVelocityX = 4
@@ -529,7 +589,7 @@ while running:
                 get_tile()
              
 
-            if key_pressed[K_a] and (not keyDown)and (not isMoving):
+            if key_pressed[K_a] and (not keyDown)and (not isMoving) and velocityX == 0:
                 isMoving = True
                 velocityX = -4
                 WorldVelocityX = -4
@@ -541,7 +601,7 @@ while running:
                 collisionKey = 2
                 get_tile()
 
-            if key_pressed[K_w] and (not keyDown)and (not isMoving):
+            if key_pressed[K_w] and (not keyDown)and (not isMoving)and velocityY == 0:
                 isMoving = True
                 velocityY = -4
                 WorldVelocityY = -4
@@ -553,7 +613,7 @@ while running:
                 collisionKey = 3
                 get_tile()
 
-            if key_pressed[K_s] and (not keyDown) and (not isMoving):
+            if key_pressed[K_s] and (not keyDown) and (not isMoving)and velocityY == 0:
                 isMoving = True
                 velocityY = 4
                 WorldVelocityY = 4
@@ -603,6 +663,7 @@ while running:
                      itemUse = True
 
         elif event.type == pygame.MOUSEBUTTONDOWN: #1 -left click, #2 - right click
+            mousePos = pygame.mouse.get_pos()
             print(inventory.getCurrentObject().getID())
             if event.button == 1 and itemUse and inventory.getCurrentObject().getID() == "bow":
                 projectileFired = True
@@ -612,6 +673,15 @@ while running:
                     showAttackWarning = False
                 else:
                     showAttackWarning = True
+
+            #death button logic
+            if event.button == 1 and endGame() == True and deathMessage.getExitRect().collidepoint(mousePos):
+                print("Exit selected")
+                running = False
+
+            if event.button == 1 and endGame() == True and deathMessage.getAgainRect().collidepoint(mousePos):
+                print("play again selected")
+                startGameBool = True
 
             
 
@@ -653,16 +723,7 @@ while running:
 
             
 
-    #once we are out of range
-    for row in enumerate(npc_sprite_list):
-        if row[1].getRange() == True: #if we are in range of a npc
-            if key_pressed[K_e]: #if the interact key is pressed
-                for row in enumerate(npc_sprite_list):
-                    if row[1].getRange(): #find the curernt npc thats being interacted with 
-                        textbox1.updateStatus(True) #update the box to show
-            break #dont go to other conditional after
-        else: 
-            textbox1.updateStatus(False) #textbox defaults off
+
 
         
     
@@ -685,18 +746,24 @@ while running:
 
     
     screen.fill('blue')
-    #loads the world first, then checks for collison, then loads player logic, then loads in items. Lastly, it will load in projectile
-    world.run(textbox_sprite_list)
-    renderHealthbar()
-    collision()
-    player()
-    drawItem(currentItem)
-    if currentItem != None:
-        currentItem.renderObject(screen)
-    renderEnemy(enemyList)
-    renderProjectiles(projectileList)
-    renderMelee(meleeList)
-    #inventory logic
-    if inventory.getStatus():
-        inventory.render(screen)
+  
+    startGame() #starts the game
+    if endGame(): #if the player health is 0, everything is unrendered
+        screen.fill('black')
+        deathMessage.render(screen)
+    else:
+        isInteractable() #checks if we are in range of npcs
+        world.run(textbox_sprite_list) #generates the world
+        collision() #checks if anything is colldiing
+        player() #renders player and player logic
+        drawItem(currentItem) #draws any item in used
+        if currentItem != None: #if there is a current item in use
+            currentItem.renderObject(screen) #render the held object
+        renderEnemy(enemyList) #render enemy
+        renderProjectiles(projectileList) #render projectile
+        renderMelee(meleeList) #render melee
+        renderHealthbar() #render healthnar
+        #inventory logic
+        if inventory.getStatus():
+            inventory.render(screen)
     pygame.display.update()
