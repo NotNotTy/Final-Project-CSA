@@ -41,6 +41,9 @@ class InventorySlot:
     def getObjectY(self):
         return (self.item).getY()
     
+    def updateAmount(self,x):
+        self.amount += x
+    
     
 
 

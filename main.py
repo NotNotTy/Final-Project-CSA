@@ -16,6 +16,7 @@ from enemy import enemy
 from fractions import Fraction
 from healthbar import healthbar
 from deathScreen import deathScreen
+from crate import crate
 pygame.init()
 pygame.font.init()
 #------------------------CONSTANTS---------------------------------
@@ -34,6 +35,8 @@ NPC_STARTCOORDSX = 768
 NPC_STARTCOORDSY = 384
 TEXTBOX_COORDSX = 100
 TEXTBOX_COORDSY = 100
+WORLD_SIZE_X = 3840 #60x60 (update later if map size is changed)
+WORLD_SIZE_Y = 3840
 SPEED = 4 #speed of the player/world
 PROJECTILE_SPEED = 8
 TEXTBOX_SPRITE_WIDTH = 576 #used for translating the box in the middle
@@ -78,10 +81,15 @@ projectileList = []
 meleeList = []
 enemyList = []
 textList = []
+crateList = []
 enemyList.append(testenemy)
+#all of the below is used as conditionals to show text
 enemyKilled = False
+emptyBag = False
 showInteraction = False
 NPCRadius = False
+#-----#
+crateRadius = False
 startGameBool = True
 
 
@@ -93,8 +101,8 @@ startGameBool = True
 def startGame(): #used to start the game, also used to reset the game if the player dies. This assigns properties to all the variables needed
     global startGameBool
     if startGameBool:
-        global player1,npc1,npc2,world,healthbarIcon,all_sprites_list,npc_sprite_list,projectileList,meleeList,enemyList,textbox1,textbox_sprite_list,textList
-        global velocityX,velocityY,isMoving,WorldVelocityX,WorldVelocityY,direction,lastDirection,facingDirection,showInteraction,NPCRadius
+        global player1,npc1,npc2,world,healthbarIcon,all_sprites_list,npc_sprite_list,projectileList,meleeList,enemyList,textbox1,textbox_sprite_list,textList,crateList
+        global velocityX,velocityY,isMoving,WorldVelocityX,WorldVelocityY,direction,lastDirection,facingDirection,showInteraction,NPCRadius,crateRadius,emptyBag
         global keyUp, collisionKey,projectileFired,meleeSwung,meleeInUse,showAttackWarning,keyDown,itemUse,previousItem,collisionDetected,running,change,currentItem,enemyKilled
         world = world_creator(data,screen,START_COORDSX,START_COORDSY) #generates the world 
         player1 = Player(TILE_SIZE,START_COORDSX,START_COORDSY,playerImg,"player",PLAYER_STARTING_HEALTH)
@@ -135,11 +143,18 @@ def startGame(): #used to start the game, also used to reset the game if the pla
         meleeList = []
         enemyList = []
         textList = []
+        crateList = []
         enemyKilled = False
         showInteraction = False
         NPCRadius = False #if we are in range of an NPC
+        crateRadius = False #if we are in range of a crate
+        emptyBag = False
         enemyList.append(testenemy)
+        inventory.reset()
         startGameBool = False
+
+        #STAGE SETUP
+        crateCreation(10) #create 10 crates
 
 def endGame():
     global player1
@@ -260,6 +275,8 @@ def collision(): #checks if theres a collision
 def interactable(): #loops through every collideable object
     global showInteraction
     global NPCRadius
+    global crateList
+    global crateRadius
     for index,npc in enumerate(npc_sprite_list):
          if pygame.Rect.colliderect(player1.getRect(),npc.getHitboxRect()):
             NPCRadius = True
@@ -278,6 +295,22 @@ def interactable(): #loops through every collideable object
              npc.editRange(False)
              #print(row[1].getRange())
 
+    for index, crate in enumerate(crateList):
+        if pygame.Rect.colliderect(player1.getRect(),crate.getHitboxRect()):
+            crateRadius = True
+            if showInteraction == True:
+                pass
+            elif showInteraction == False and crate.getRange() == True: #if show interaction is false, but we are in range of an npc
+                pass
+            else:
+                showInteraction = True
+                textCreation()
+            crate.editRange(True)
+        else:
+            if crate.getRange() == True:
+                crateRadius = False
+            crate.editRange(False)
+
 #--------------------------------------------------------WORLD UPDATING------------------------------------------------------#
 def player(): #draws the player
     global direction
@@ -295,6 +328,7 @@ def player(): #draws the player
     world.updateRelative(velocityX,velocityY) #takes in user input and moves when held
     world.update_layout(-velocityX,velocityY) #takes in user input and moves when held
     all_sprites_list.update(-velocityX,-velocityY)#keep moving at speed until we are tile
+    
     if (velocityX != 0) or (velocityY != 0):
         isMoving = True
     if ((world.getRelativeX() % TILE_SIZE) != 0 and keyUp): #if we are not on a tile and we are not holding a key, reajust to a tile
@@ -417,16 +451,43 @@ def textCreation():
     global textList
     global enemyKilled
     global showInteraction
+    global crateRadius
+    global emptyBag
     currentTime = pygame.time.get_ticks()
     if showInteraction:
         textList.append(TextGenerator(player1.getRelativeX(),player1.getRelativeY() - 32,'press E to interact','freesansbold.ttf',currentTime,"radius"))
         showInteraction = False
-    if showAttackWarning and not NPCRadius:
+    if showAttackWarning and not NPCRadius and not crateRadius:
         textList.append(TextGenerator(player1.getRelativeX(),player1.getRelativeY() - 32, 'You cannot use your weapon behind you!', 'freesansbold.ttf',currentTime,"temp"))
         showAttackWarning = False
-    if enemyKilled and not NPCRadius:
+    if enemyKilled and not NPCRadius and not crateRadius:
         textList.append(TextGenerator(player1.getRelativeX(),player1.getRelativeY() - 32, 'You have killed an enemy!', 'freesansbold.ttf',currentTime,"temp"))
         enemyKilled = False
+    if emptyBag and not NPCRadius and not crateRadius:
+        textList.append(TextGenerator(player1.getRelativeX(),player1.getRelativeY() - 32, 'Your bag is empty!', 'freesansbold.ttf',currentTime,"temp"))
+        emptyBag = False
+
+def crateCreation(num):
+    global crateList
+    global screen
+
+    for i in range(num):
+        x_coords = random.randrange( TILE_SIZE* -27,(59 - 27) * TILE_SIZE,TILE_SIZE) #Note, the multipler MUST BE WHATEVER THE WORLD MULTIPLIER IS in World.py
+        y_coords = random.randrange(TILE_SIZE -27, (59 - 27) * TILE_SIZE,TILE_SIZE) #Second Note, the end condition must be one less the world width subtracted by multiplier
+        crateList.append(crate("Sprites/crate32.png",x_coords + 16,y_coords + 16,"crate",False)) #add 16 to center the smaller crate
+
+def spawn_enemy():
+    global enemyList
+    global world
+    list = world.getObjectList()
+    xcoords = random.randrange(0,LENGTH)
+    ycoords = random.randrange(0,WIDTH)
+    for index,obj in enumerate(list[1]):
+        if obj.get_coords() == [xcoords,ycoords]:
+            while obj.get_coords() == [xcoords,ycoords]:
+                xcoords = random.randrange(0,LENGTH)
+                ycoords = random.randrange(0,WIDTH)
+    enemyList.append(enemy("Sprites/character64.png",200,20,xcoords,ycoords,START_COORDSX,START_COORDSY,screen,"enemy"))
 #----------------------------------------------------------------------------------------------------------------------#
 
 
@@ -436,10 +497,10 @@ def renderText(list): #function used to render all text
     global velocityY
     global showInteraction
     global NPCRadius
-    radiusActive = False
+    global crateRadius
     for index, text in enumerate(list):
         if text.getID() == "radius":
-            if NPCRadius == False:
+            if NPCRadius == False and crateRadius == False:
                 textList.remove(text)
         if text.getID() == "temp":
             if pygame.time.get_ticks() - text.getTime() >= 1000: #1 sec
@@ -540,6 +601,14 @@ def renderHealthbar():
     healthbarIcon.update(PLAYER_STARTING_HEALTH,player1.getHealth())
     healthbarIcon.render(screen)
 
+def renderCrate(list):
+    global screen
+    global player1
+    for index,crate in enumerate(list):
+        crate.update(-WorldVelocityX,-WorldVelocityY)
+        crate.render(screen)
+        
+
 #----------------------------------------------------------------------------------------------------------------------------------------#
 def inRadius(): #if the mouse is in a certain radius of the weapon, it will fire
     mousepos = pygame.mouse.get_pos()
@@ -591,18 +660,7 @@ def get_tile(): #returns the coordinate position of the player
     print(coords)
 
 
-def spawn_enemy():
-    global enemyList
-    global world
-    list = world.getObjectList()
-    xcoords = random.randrange(0,LENGTH)
-    ycoords = random.randrange(0,WIDTH)
-    for index,obj in enumerate(list[1]):
-        if obj.get_coords() == [xcoords,ycoords]:
-            while obj.get_coords() == [xcoords,ycoords]:
-                xcoords = random.randrange(0,LENGTH)
-                ycoords = random.randrange(0,WIDTH)
-    enemyList.append(enemy("Sprites/character64.png",200,20,xcoords,ycoords,START_COORDSX,START_COORDSY,screen,"enemy"))
+
             
 
 while running:
@@ -685,15 +743,29 @@ while running:
                 inventory.updateSelection(-1) #going left one
        
             if key_pressed[K_RETURN] and inventory.getStatus() == True and not meleeInUse: #when we selected something
-                inventory.onEnter()
-                inventorylist = inventory.getInventoryList()
-                selection = inventory.getSeleciton()
-                
-                if selection == -1: #if we select this, then we are unselecting an item
-                    itemUse = False
+                if inventory.getSeleciton() == None: #if there is nothing in our inventory
+                    
+                    emptyBag = True
+                    textCreation()
                 else:
-                    currentItem = inventorylist[selection]
-                    itemUse = True
+                    inventory.onEnter()
+                    inventorylist = inventory.getInventoryList()
+                    selection = inventory.getSeleciton()
+                
+                    if selection == -1: #if we select this, then we are unselecting an item
+                        itemUse = False
+                    else:
+                        currentItem = inventorylist[selection]
+                        itemUse = True
+            
+            #crate interacction
+            if key_pressed[K_e] and crateRadius == True:
+                for index, obj in enumerate(crateList):
+                    if obj.getRange() == True:
+                        print(inventory)
+                        obj.loot(inventory)
+                        crateList.remove(obj)
+                        crateRadius = False
 
             #if the inventory is open, item can be  used
             if key_pressed[K_r] and inventory.getStatus() == True:
@@ -801,6 +873,7 @@ while running:
         world.run() #generates the world
         collision() #checks if anything is colldiing
         player() #renders player and player logic
+        renderCrate(crateList)
         drawItem(currentItem) #draws any item in used
         if currentItem != None: #if there is a current item in use
             currentItem.renderObject(screen) #render the held object
