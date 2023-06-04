@@ -473,24 +473,25 @@ def crateCreation(num):
     global screen
 
     for i in range(num):
-        x_coords = random.randrange( TILE_SIZE* -27,(59 - 27) * TILE_SIZE,TILE_SIZE) #Note, the multipler MUST BE WHATEVER THE WORLD MULTIPLIER IS in World.py
-        y_coords = random.randrange(TILE_SIZE -27, (59 - 27) * TILE_SIZE,TILE_SIZE) #Second Note, the end condition must be one less the world width subtracted by multiplier
+        x_coords = random.randrange( TILE_SIZE* -26,(99 - 26) * TILE_SIZE,TILE_SIZE) #Note, the multipler MUST BE WHATEVER THE WORLD MULTIPLIER IS in World.py
+        y_coords = random.randrange(TILE_SIZE -26, (99 - 26) * TILE_SIZE,TILE_SIZE) #Second Note, the end condition must be one less the world width subtracted by multiplier
         crateList.append(crate("Sprites/crate32.png",x_coords + 16,y_coords + 16,"crate",False)) #add 16 to center the smaller crate
 
-def spawn_enemy():
+def spawn(): #spawns some stuff
     global enemyList
     global world
-    list = world.getObjectList()
+    list = world.getCollideableList()
     num = random.randrange(1,5) #chooses a random number of enemy to spawn
-    for i in range(num):
-        xcoords = random.randrange(TILE_SIZE* -27,(59 - 27) * TILE_SIZE,TILE_SIZE)
-        ycoords = random.randrange(TILE_SIZE -27, (59 - 27) * TILE_SIZE,TILE_SIZE)
-        for index,obj in enumerate(list[1]):
-            if obj.get_coords() == [xcoords,ycoords]:
-                while obj.get_coords() == [xcoords,ycoords]:
-                    xcoords = random.randrange(TILE_SIZE* -27,(59 - 27) * TILE_SIZE,TILE_SIZE)  #Note, the multipler MUST BE WHATEVER THE WORLD MULTIPLIER IS in World.py
-                    ycoords = random.randrange(TILE_SIZE -27, (59 - 27) * TILE_SIZE,TILE_SIZE) #Second Note, the end condition must be one less the world width subtracted by multiplier
-        enemyList.append(enemy("Sprites/character64.png",200,20,xcoords,ycoords,START_COORDSX,START_COORDSY,screen,"enemy"))
+    for row in list:
+        xcoords = random.randrange(TILE_SIZE* -26,(99 - 40) * TILE_SIZE,TILE_SIZE)
+        ycoords = random.randrange(TILE_SIZE -26, (99 - 36) * TILE_SIZE,TILE_SIZE)
+        for collidable in enumerate(row):
+            if set(collidable[1].get_coords()) & set([xcoords,ycoords]):
+                while collidable[1].get_coords() == [xcoords,ycoords]:
+                    xcoords = random.randrange(TILE_SIZE* -26,(99 - 40) * TILE_SIZE,TILE_SIZE)  #Note, the multipler MUST BE WHATEVER THE WORLD MULTIPLIER IS in World.py
+                    ycoords = random.randrange(TILE_SIZE -26, (99 - 36) * TILE_SIZE,TILE_SIZE) #Second Note, the end condition must be one less the world width subtracted by multiplier
+    crateCreation(2) #create two new crates every 10 second
+    enemyList.append(enemy("Sprites/character64.png",200,20,xcoords,ycoords,START_COORDSX,START_COORDSY,screen,"enemy"))
 #----------------------------------------------------------------------------------------------------------------------#
 
 
@@ -660,6 +661,7 @@ def get_tile(): #returns the coordinate position of the player
     coords = [(player1.getRelativeX() - START_COORDSX)//TILE_SIZE,(player1.getRelativeY()-START_COORDSY)//TILE_SIZE]
     #print(playerXRelative//TILE_SIZE,playerYRelative//TILE_SIZE)
     #print(playerXRelative,playerYRelative)
+    print(player1.getRelativeX())
     print(coords)
 
 
@@ -673,7 +675,7 @@ while running:
     #screen.fill((0,0,0))
     #print(pygame.time.get_ticks() % 10000)
     if (pygame.time.get_ticks() % 10000 >= 0)and (pygame.time.get_ticks() % 10000 <= 20): #for every 10 seconds, spawn an enemy
-        spawn_enemy()
+        spawn()
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
@@ -681,7 +683,7 @@ while running:
         if event.type == pygame.KEYDOWN:
             key_pressed = pygame.key.get_pressed()
             #not keydown is used to prevent strafing
-            if key_pressed[K_d] and (not keyDown) and (not isMoving) and velocityX == 0: 
+            if key_pressed[K_d] and (not keyDown) and (not isMoving) and WorldVelocityX == 0: 
                 isMoving = True
                 velocityX = 4
                 WorldVelocityX = 4
@@ -694,7 +696,7 @@ while running:
                 get_tile()
              
 
-            if key_pressed[K_a] and (not keyDown)and (not isMoving) and velocityX == 0:
+            if key_pressed[K_a] and (not keyDown)and (not isMoving) and WorldVelocityX == 0:
                 isMoving = True
                 velocityX = -4
                 WorldVelocityX = -4
@@ -706,7 +708,7 @@ while running:
                 collisionKey = 2
                 get_tile()
 
-            if key_pressed[K_w] and (not keyDown)and (not isMoving)and velocityY == 0:
+            if key_pressed[K_w] and (not keyDown)and (not isMoving)and WorldVelocityY == 0:
                 isMoving = True
                 velocityY = -4
                 WorldVelocityY = -4
@@ -718,7 +720,7 @@ while running:
                 collisionKey = 3
                 get_tile()
 
-            if key_pressed[K_s] and (not keyDown) and (not isMoving)and velocityY == 0:
+            if key_pressed[K_s] and (not keyDown) and (not isMoving)and WorldVelocityY == 0:
                 isMoving = True
                 velocityY = 4
                 WorldVelocityY = 4
