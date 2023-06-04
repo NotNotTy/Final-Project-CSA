@@ -2,11 +2,11 @@ import pygame
 
 class deathScreen:
     def __init__(self,playagain,exit,message):
-        self.message = pygame.image.load(message)
+        self.message = pygame.image.load(message).convert_alpha()
         self.messagerect = self.message.get_rect(topleft = (0,0))
-        self.playagain = pygame.image.load(playagain)
+        self.playagain = pygame.image.load(playagain).convert_alpha()
         self.playagainrect = self.playagain.get_rect(topleft = (0,0))
-        self.exit = pygame.image.load(exit)
+        self.exit = pygame.image.load(exit).convert_alpha()
         self.exitRect = self.exit.get_rect(topleft = (0,0))
 
 

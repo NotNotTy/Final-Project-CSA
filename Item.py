@@ -4,7 +4,7 @@ from projectile import projectile
 class Item:
     def __init__(self,image,dmg):
         self.display = False
-        self.image = pygame.image.load(image)
+        self.image = pygame.image.load(image).convert_alpha()
         self.updatedImage = self.image #used to update
         self.rect = self.image.get_rect()
         self.rect.topleft = (0, 64)

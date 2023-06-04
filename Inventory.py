@@ -6,7 +6,7 @@ class Inventory:
     def __init__(self):
         self.display = False
         self.slot = []
-        self.image = pygame.image.load("Sprites/inventory.png") #512x128
+        self.image = pygame.image.load("Sprites/inventory.png").convert_alpha() #512x128
         self.rect = self.image.get_rect()
         self.rect.topleft = (0, 128)
         self.status = False

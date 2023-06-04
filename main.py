@@ -23,9 +23,9 @@ pygame.font.init()
 LENGTH = 1216
 WIDTH = 704
 screen = pygame.display.set_mode((LENGTH,WIDTH)) #a single tile is 32 by 32, entire map is 60x60 tiles
-playerImg = pygame.image.load("Sprites/red.png") #fill this
-npcImg = pygame.image.load("Sprites/character64.png")
-textboxImg = pygame.image.load("Sprites/textbox2.png")
+playerImg = pygame.image.load("Sprites/red.png").convert_alpha() #fill this
+npcImg = pygame.image.load("Sprites/character64.png").convert_alpha()
+textboxImg = pygame.image.load("Sprites/textbox2.png").convert_alpha()
 clock = pygame.time.Clock() #clock
 TILE_SIZE = 64 #each tile is 32x32 big
 FPS = 60 #pretty self explainitory
@@ -204,31 +204,32 @@ def checkCollision(obj): #checks to see if theres a collision with obj and the w
     global meleeInUse
     global previousItem
     global enemyKilled
-    list = world.getObjectList()
-    for row_index, row in enumerate(list[1]):
-        if pygame.sprite.collide_rect(obj, row): #if anything collides with the enviromental obstacles
-            if (type(obj) == type(player1)) or obj.getID() == "enemy":
-                collisionDetected = True
-                if (world.getRelativeX() % TILE_SIZE != 0):
-                    if collisionKey == 1: #the D key
-                        CollisionUpdateDirectionX(1)
-                    elif collisionKey == 2: #the A key
-                        CollisionUpdateDirectionX(-1)
-                elif (world.getRelativeY() % TILE_SIZE != 0):
-                    if collisionKey == 3: #the W key
-                        CollisionUpdateDirectionY(-1)
-                    elif collisionKey == 4: #the S key
-                        CollisionUpdateDirectionY(1)
+    list = world.getCollideableList()
+    for row in list:
+        for collideable in enumerate(row):
+            if pygame.sprite.collide_rect(obj, collideable[1]): #if anything collides with the enviromental obstacles
+                if (type(obj) == type(player1)) or obj.getID() == "enemy":
+                    collisionDetected = True
+                    if (world.getRelativeX() % TILE_SIZE != 0):
+                        if collisionKey == 1: #the D key
+                            CollisionUpdateDirectionX(1)
+                        elif collisionKey == 2: #the A key
+                            CollisionUpdateDirectionX(-1)
+                    elif (world.getRelativeY() % TILE_SIZE != 0):
+                        if collisionKey == 3: #the W key
+                            CollisionUpdateDirectionY(-1)
+                        elif collisionKey == 4: #the S key
+                            CollisionUpdateDirectionY(1)
 
-            
-            
-            else:
                 
-                collisionKey = 0 #reset everything
-                keyDown = False
-                direction = 0
-                if obj.getID() == "projectile" or obj.getID() == "melee": #all objects will have a id system
-                    return True
+                
+                else:
+                    
+                    collisionKey = 0 #reset everything
+                    keyDown = False
+                    direction = 0
+                    if obj.getID() == "projectile" or obj.getID() == "melee": #all objects will have a id system
+                        return True
     #Enemy damage code
     for index, enemy in enumerate(enemyList):
         if pygame.sprite.collide_rect(enemy,obj):
@@ -593,7 +594,7 @@ def renderEnemy(list): #TO FIX - COLLISION WITH OBJECT MAKES ENEMY GO VROOM, IDK
     for index, enemy in enumerate(list):
             #checkCollision(enemy)
             enemy.update(-WorldVelocityX,-WorldVelocityY)
-            enemy.setTrajectory([START_COORDSX,START_COORDSY],SPEED/2,world.getObjectList())
+            enemy.setTrajectory([START_COORDSX,START_COORDSY],SPEED/2,world.getCollideableList())
             enemy.render()
 
 def renderHealthbar():
@@ -779,9 +780,10 @@ while running:
                      currentItem = item
                      itemUse = True
 
-        elif event.type == pygame.MOUSEBUTTONDOWN: #1 -left click, #2 - right click
+        elif event.type == pygame.MOUSEBUTTONDOWN and not startGameBool: #1 -left click, #2 - right click
             mousePos = pygame.mouse.get_pos()
-            print(inventory.getCurrentObject().getID())
+         
+            #print(inventory.getCurrentObject().getID())
             if event.button == 1 and itemUse and inventory.getCurrentObject().getID() == "bow":
                 projectileFired = True
             if event.button == 1 and itemUse and inventory.getCurrentObject().getID() == "sword" and not meleeInUse: #segment used to render melee attacks

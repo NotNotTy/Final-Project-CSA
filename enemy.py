@@ -3,7 +3,7 @@ import math
 class enemy:
     def __init__(self,sprite,health,damage,startx,starty,endx,endy,screen,tag):
         self.image = pygame.Surface((64,64))
-        self.image = pygame.image.load(sprite)
+        self.image = pygame.image.load(sprite).convert_alpha()
         self.rect = self.image.get_rect()
         self.rect.topleft = (startx,starty)
         self.green = None
@@ -66,11 +66,12 @@ class enemy:
             if not pygame.Rect.colliderect(self.obstacle.getRect(),self.eyesightRect): #if we are not colliding with the same object again
                 self.vision = 1
                 self.visionStatus = True
-        for index, obj in enumerate(objList[1]):
-            if pygame.Rect.colliderect(obj.getRect(),self.eyesightRect):
-                self.vision = 0
-                self.visionStatus = False
-                self.obstacle = obj
+        for row in objList:
+            for collideable in enumerate(row):
+                if pygame.Rect.colliderect(collideable[1].getRect(),self.eyesightRect):
+                    self.vision = 0
+                    self.visionStatus = False
+                    self.obstacle = collideable[1]
 
         distance_y = self.y - end[1]
         distance_x = self.x - end[0]

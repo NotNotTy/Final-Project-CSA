@@ -6,7 +6,7 @@ class InventorySlot:
         self.display = False
         self.itemID = itemID
         self.amount = amount
-        self.image = pygame.image.load(image)
+        self.image = pygame.image.load(image).convert_alpha()
         self.rect = self.image.get_rect()
         self.rect.topleft = (0, 64)
         self.font = pygame.font.Font('freesansbold.ttf',16)

@@ -1,0 +1,127 @@
+{
+    "Map/SizeTest": {
+        "height": 4300,
+        "width": 2
+    },
+    "activeFile": "world_test.tmx",
+    "console.history": [
+        "--export-tileset",
+        "--export-map"
+    ],
+    "expandedProjectPaths": [
+    ],
+    "file.lastUsedOpenFilter": "All Files (*)",
+    "fileStates": {
+        "Cactus.tsx": {
+            "dynamicWrapping": false
+        },
+        "D:/School/Comp Sci A/Final-Project-CSA/tileset_data/Bush_Final.tsx": {
+            "scaleInDock": 1
+        },
+        "D:/School/Comp Sci A/Final-Project-CSA/tileset_data/Cactus_Final.tsx": {
+            "scaleInDock": 1
+        },
+        "D:/School/Comp Sci A/Final-Project-CSA/tileset_data/Grass.tsx": {
+            "dynamicWrapping": true,
+            "scaleInDock": 1
+        },
+        "D:/School/Comp Sci A/Final-Project-CSA/tileset_data/Rock_Final.tsx": {
+            "dynamicWrapping": true,
+            "scaleInDock": 1
+        },
+        "D:/School/Comp Sci A/Final-Project-CSA/tileset_data/Sand_final.tsx": {
+            "scaleInDock": 1
+        },
+        "D:/School/Comp Sci A/Final-Project-CSA/tileset_data/Tree_Final.tsx": {
+            "scaleInDock": 1
+        },
+        "D:/School/Comp Sci A/Final-Project-CSA/tileset_data/Water_Final.tsx": {
+            "scaleInDock": 1
+        },
+        "D:/School/Comp Sci A/Final-Project-CSA/tileset_data/world_final.tmx": {
+            "scale": 0.06679687499999999,
+            "selectedLayer": 1,
+            "viewCenter": {
+                "x": 8278.830409356728,
+                "y": 6407.485380116961
+            }
+        },
+        "D:/School/Comp Sci A/Final-Project-CSA/tileset_data/world_final.tmx#plain": {
+            "scaleInDock": 1
+        },
+        "Grass.tsx": {
+            "dynamicWrapping": false
+        },
+        "Rock.tsx": {
+            "dynamicWrapping": false
+        },
+        "Sand.tsx": {
+            "dynamicWrapping": false
+        },
+        "Tree.tsx": {
+            "dynamicWrapping": false
+        },
+        "Water.tsx": {
+            "dynamicWrapping": false
+        },
+        "world_final_2..tmx": {
+            "scale": 0.1669921875,
+            "selectedLayer": 0,
+            "viewCenter": {
+                "x": 2562.9941520467837,
+                "y": 2562.9941520467833
+            }
+        },
+        "world_final_2.tmx": {
+            "scale": 0.1669921875,
+            "selectedLayer": 0,
+            "viewCenter": {
+                "x": 2551.017543859649,
+                "y": 3257.6374269005846
+            }
+        },
+        "world_test..tmx": {
+            "scale": 0.1669921875,
+            "selectedLayer": 0,
+            "viewCenter": {
+                "x": 2557.0058479532163,
+                "y": 3089.9649122807014
+            }
+        },
+        "world_test.tmx": {
+            "scale": 0.1669921875,
+            "selectedLayer": 0,
+            "viewCenter": {
+                "x": 3149.847953216374,
+                "y": 2065.964912280702
+            }
+        }
+    },
+    "last.exportedFilePath": "D:/School/Comp Sci A/Final-Project-CSA/tileset_data/Tileset_practice",
+    "last.externalTilesetPath": "D:/School/Comp Sci A/Final-Project-CSA/tileset_data/Tileset_practice",
+    "last.imagePath": "D:/School/Comp Sci A/Final-Project-CSA/Sprites",
+    "map.height": 100,
+    "map.lastUsedExportFilter": "CSV files (*.csv)",
+    "map.lastUsedFormat": "tmx",
+    "map.tileHeight": 64,
+    "map.tileWidth": 64,
+    "map.width": 100,
+    "openFiles": [
+        "world_test.tmx",
+        "D:/School/Comp Sci A/Final-Project-CSA/tileset_data/world_final.tmx",
+        "world_test.tmx"
+    ],
+    "project": "world_final_2.tiled-project",
+    "recentFiles": [
+        "world_test.tmx",
+        "D:/School/Comp Sci A/Final-Project-CSA/tileset_data/world_final.tmx",
+        "world_test..tmx",
+        "world_final_2.tmx",
+        "world_final_2..tmx"
+    ],
+    "tileset.lastUsedFormat": "tsx",
+    "tileset.tileSize": {
+        "height": 64,
+        "width": 64
+    }
+}

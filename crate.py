@@ -5,7 +5,7 @@ class crate(pygame.sprite.Sprite):
     def __init__(self, img, x ,y,n,r):
         super().__init__()
         self.image = pygame.Surface((64,64))
-        self.image = pygame.image.load(img)
+        self.image = pygame.image.load(img).convert()
         #self.rect = self.image.get_rect(topleft = (x,y))
         self.rect = self.image.get_rect(topleft = (x,y))
         self.hitboxrect = pygame.Rect(0,0,192,192)

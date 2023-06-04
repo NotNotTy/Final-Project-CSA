@@ -5,7 +5,7 @@ class healthbar:
     def __init__(self,border,x,y,width,height):
         self.green = pygame.Rect(x,y,width,height)
         self.red = pygame.Rect(x,y,width,height)
-        self.border = pygame.image.load(border)
+        self.border = pygame.image.load(border).convert_alpha()
         self.rect = self.border.get_rect()
         self.rect.topleft = (x - 32, y - 30)
         self.x = x
