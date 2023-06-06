@@ -16,6 +16,7 @@ from enemy import enemy
 from fractions import Fraction
 from healthbar import healthbar
 from deathScreen import deathScreen
+from hunger import hunger
 from crate import crate
 pygame.init()
 pygame.font.init()
@@ -41,6 +42,7 @@ SPEED = 4 #speed of the player/world
 PROJECTILE_SPEED = 8
 TEXTBOX_SPRITE_WIDTH = 576 #used for translating the box in the middle
 PLAYER_STARTING_HEALTH = 200
+PLAYER_STARTING_HUNGER = 20
 #----------------------------VARIABLE INITALIZATION---------------------------#
 world = None
 player1 = None
@@ -49,6 +51,7 @@ npc2 = None
 textbox1 = None
 text = TextGenerator(START_COORDSX,START_COORDSY - 64,'press E to interact','freesansbold.ttf',pygame.time.get_ticks(),"radius") #temp is when it'll disappear after blank time, radius will show if in range
 deathMessage = deathScreen("Sprites/playagain.png","Sprites/exit.png","Sprites/deathScreen.png")
+hungerbar = None
 testenemy = None
 healthbarIcon = None
 inventory = Inventory()
@@ -58,6 +61,7 @@ textbox_sprite_list = None
 #all_sprites_list.add(player1)
 velocityX = 0
 velocityY = 0
+hungerspeed = 1
 isMoving = False
 WorldVelocityX = 0 #since velocityX and velocityY are resetted to zero to account for player movement, this is used for the rest of the World
 WorldVelocityY = 0
@@ -102,15 +106,16 @@ def startGame(): #used to start the game, also used to reset the game if the pla
     global startGameBool
     if startGameBool:
         global player1,npc1,npc2,world,healthbarIcon,all_sprites_list,npc_sprite_list,projectileList,meleeList,enemyList,textbox1,textbox_sprite_list,textList,crateList
-        global velocityX,velocityY,isMoving,WorldVelocityX,WorldVelocityY,direction,lastDirection,facingDirection,showInteraction,NPCRadius,crateRadius,emptyBag
+        global velocityX,velocityY,isMoving,WorldVelocityX,WorldVelocityY,direction,lastDirection,facingDirection,showInteraction,NPCRadius,crateRadius,emptyBag,hungerbar,hungerspeed
         global keyUp, collisionKey,projectileFired,meleeSwung,meleeInUse,showAttackWarning,keyDown,itemUse,previousItem,collisionDetected,running,change,currentItem,enemyKilled
         world = world_creator(data,screen,START_COORDSX,START_COORDSY) #generates the world 
-        player1 = Player(TILE_SIZE,START_COORDSX,START_COORDSY,playerImg,"player",PLAYER_STARTING_HEALTH)
+        player1 = Player(TILE_SIZE,START_COORDSX,START_COORDSY,playerImg,"player",PLAYER_STARTING_HEALTH,PLAYER_STARTING_HUNGER)
         npc1 = NPC(TILE_SIZE,NPC_STARTCOORDSX,NPC_STARTCOORDSY,npcImg,'npc',False)
         npc2 = NPC(TILE_SIZE,NPC_STARTCOORDSX + 128,NPC_STARTCOORDSY,npcImg,'npc',False)
         textbox1 = textbox(TILE_SIZE,(LENGTH/2) - (384/2),player1.getY() + 7 * TILE_SIZE,textboxImg,'textbox',False)
         testenemy = enemy("Sprites/character64.png",200,20,START_COORDSX + 640,START_COORDSY + 640,START_COORDSX,START_COORDSY,screen,"enemy")
         healthbarIcon = healthbar("Sprites/hpbar.png",LENGTH - (TILE_SIZE * 5),WIDTH - TILE_SIZE/2,TILE_SIZE * 5, TILE_SIZE/2) #currently the bar is (64*5,32)
+        hungerbar = hunger("Sprites/hpbar.png",LENGTH - (TILE_SIZE * 5),WIDTH - (TILE_SIZE/2 * 2),TILE_SIZE * 4,TILE_SIZE/2)
         all_sprites_list = pygame.sprite.Group()
         npc_sprite_list = pygame.sprite.Group()
         textbox_sprite_list = pygame.sprite.Group()
@@ -120,6 +125,7 @@ def startGame(): #used to start the game, also used to reset the game if the pla
         textbox_sprite_list.add(textbox1)
         velocityX = 0
         velocityY = 0
+        hungerspeed = 1
         isMoving = False
         WorldVelocityX = 0 #since velocityX and velocityY are resetted to zero to account for player movement, this is used for the rest of the World
         WorldVelocityY = 0
@@ -318,34 +324,40 @@ def player(): #draws the player
     global velocityX #the speed of the player dictated by input
     global velocityY #the speed of the player dictated by input
     global keyUp #if we let go of the movement keys
+    global keyDown
     global lastDirection
     global facingDirection
     global isMoving
     global WorldVelocityX
     global WorldVelocityY
     global enemyList
+    global hungerspeed
     #print(pygame.mouse.get_pos())
+    if (player1.getHunger() <= 5):
+        hungerspeed = 0.5 #cut speed in half
+    else:
+        hungerspeed = 1
     player1.updateSprite(lastDirection)
-    player1.updateRelative(velocityX,velocityY) #here just to keep track of the player, is basically the asme thing as worldrelative
-    world.updateRelative(velocityX,velocityY) #takes in user input and moves when held
-    world.update_layout(-velocityX,velocityY) #takes in user input and moves when held
-    all_sprites_list.update(-velocityX,-velocityY)#keep moving at speed until we are tile\
+    player1.updateRelative(velocityX * hungerspeed,velocityY * hungerspeed) #here just to keep track of the player, is basically the asme thing as worldrelative
+    world.updateRelative(velocityX* hungerspeed,velocityY * hungerspeed) #takes in user input and moves when held
+    world.update_layout(-velocityX * hungerspeed,velocityY * hungerspeed) #takes in user input and moves when held
+    all_sprites_list.update(-velocityX * hungerspeed,-velocityY * hungerspeed)#keep moving at speed until we are tile\
    # print(world.getRelativeX() % TILE_SIZE)
     if ((world.getRelativeX() % TILE_SIZE) != 0 and keyUp and not keyDown): #if we are not on a tile and we are not holding a key, reajust to a tile
         isMoving = True
         velocityX = 0 #reset velocity to avoid extra inputs
-        world.update_layout(-SPEED  * direction,0) #keep moving at speed until we are on a tile
-        world.updateRelative(SPEED * direction,0) #keep moving at speed until we are tile
-        player1.updateRelative(SPEED * direction,0)
-        all_sprites_list.update(-SPEED  * direction,0)#keep moving at speed until we are tile
+        world.update_layout(-SPEED  * direction * hungerspeed,0) #keep moving at speed until we are on a tile
+        world.updateRelative(SPEED * direction* hungerspeed,0) #keep moving at speed until we are tile
+        player1.updateRelative(SPEED * direction* hungerspeed,0)
+        all_sprites_list.update(-SPEED  * direction* hungerspeed,0)#keep moving at speed until we are tile
         #updateEnemy(-SPEED  * direction,0)
     elif ((world.getRelativeY() % TILE_SIZE) != 0 and keyUp and not keyDown): #if we are not on a tile and we are not holding a key, reajust to a tile
         isMoving = True
         velocityY = 0  #reset velocity to avoid extra inputs
-        world.update_layout(0,SPEED  * direction) #keep moving at speed until we are on a tile
-        world.updateRelative(0,SPEED * direction) #keep moving at speed until we are on a tile
-        player1.updateRelative(0,SPEED * direction)
-        all_sprites_list.update(0,-SPEED  * direction) #keep moving at speed until we are on a tile
+        world.update_layout(0,SPEED  * direction* hungerspeed) #keep moving at speed until we are on a tile
+        world.updateRelative(0,SPEED * direction* hungerspeed) #keep moving at speed until we are on a tile
+        player1.updateRelative(0,SPEED * direction* hungerspeed)
+        all_sprites_list.update(0,-SPEED  * direction* hungerspeed) #keep moving at speed until we are on a tile
        #updateEnemy(0,-SPEED  * direction)
 
     else:
@@ -357,6 +369,8 @@ def player(): #draws the player
             if ((world.getRelativeY() % TILE_SIZE) == 0 and keyUp):
                     WorldVelocityY = 0
                     #WorldVelocityX = 0
+
+       
                 
        
         direction = 0
@@ -585,14 +599,23 @@ def renderEnemy(list): #TO FIX - COLLISION WITH OBJECT MAKES ENEMY GO VROOM, IDK
     global lastDirection
     global collisionKey
     global collisionDetected
+    global hungerspeed
+    enemyvelocityX = WorldVelocityX
+    enemyvelocityY = WorldVelocityY
     #Only one of them can not equal zero at the same time
+    if hungerspeed == 0.5:
+        enemyvelocityX *= 0.5
+        enemyvelocityY *= 0.5
+    else:
+        enemyvelocityX = WorldVelocityX
+        enemyvelocityY = WorldVelocityY
     if collisionDetected: #if we are colliding with something, do not move the enemy
         collisionDetected = False #this is still a little buggy, fix this'
         WorldVelocityX = 0
         WorldVelocityY = 0
     for index, enemy in enumerate(list):
             #checkCollision(enemy)
-            enemy.update(-WorldVelocityX,-WorldVelocityY)
+            enemy.update(-enemyvelocityX,-enemyvelocityY)
             enemy.setTrajectory([START_COORDSX,START_COORDSY],SPEED/2,world.getCollideableList())
             enemy.render()
 
@@ -603,11 +626,25 @@ def renderHealthbar():
     healthbarIcon.update(PLAYER_STARTING_HEALTH,player1.getHealth())
     healthbarIcon.render(screen)
 
+def renderHunger():
+    global screen
+    global hungerbar
+    global player1
+    #if isMoving
+    if player1.getHungerTime() != None:
+       # print(player1.getHungerTime())
+        if 0 <= (player1.getHungerTime() % 5000) <= 10:
+            player1.updateHunger(-5)
+    hungerbar.update(PLAYER_STARTING_HUNGER,player1.getHunger())
+    hungerbar.render(screen)
+    print(player1.getHunger())
+
 def renderCrate(list):
+    global hungerspeed
     global screen
     global player1
     for index,crate in enumerate(list):
-        crate.update(-WorldVelocityX,-WorldVelocityY)
+        crate.update(-WorldVelocityX * hungerspeed,-WorldVelocityY * hungerspeed)
         crate.render(screen)
         
 
@@ -893,6 +930,7 @@ while running:
         renderProjectiles(projectileList) #render projectile
         renderMelee(meleeList) #render melee
         renderHealthbar() #render healthnar
+        renderHunger()
         renderText(textList)
         #inventory logic
         if inventory.getStatus():

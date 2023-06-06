@@ -1,7 +1,7 @@
 import pygame
 
 class Player(pygame.sprite.Sprite):
-    def __init__(self, size, x ,y,surface,tag,health):
+    def __init__(self, size, x ,y,surface,tag,health,hunger):
         super().__init__()
         self.image = pygame.Surface((size,size))
         self.rect = self.image.get_rect(topleft = (x,y))
@@ -13,6 +13,10 @@ class Player(pygame.sprite.Sprite):
         self.ID = tag
         self.startHealth = health
         self.health = health
+        self.startHunger = hunger
+        self.hunger = hunger
+        self.hungerTimer = None
+        self.startHungerTimer = False
         self.invul = False
         self.starttime = 0 #startime for invul
 
@@ -21,16 +25,31 @@ class Player(pygame.sprite.Sprite):
         self.rect.y += y
         #print(self.rect.x)
     def updateRelative(self,x,y):
+        if (x != 0 or y != 0):
+            self.startHungerTimer = True
+        else:
+            self.startHungerTimer = False
+        if self.startHungerTimer:
+            self.hungerTimer = pygame.time.get_ticks()
+        else:
+            self.hungerTimer = None
+
         self.relativeX += x
         self.relativeY += y
         #self.rect.x += x
         #self.rect.y += y
 
+    def getHungerTime(self):
+        return self.hungerTimer
     def updateHealth(self,x):
         if (self.health + x > self.startHealth):
             x = self.health + x - self.startHealth
         self.health += x
 
+    def updateHunger(self,x):
+        if (self.hunger + x > self.startHunger):
+            x = self.hunger + x - self.startHunger
+        self.hunger += x
     def getHealth(self):
         return self.health
 
@@ -48,6 +67,9 @@ class Player(pygame.sprite.Sprite):
 
     def getInvulurbility(self):
         return self.invul
+    
+    def getHunger(self):
+        return self.hunger
     
     def getTime(self):
         return self.starttime
