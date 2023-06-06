@@ -319,6 +319,7 @@ def player(): #draws the player
     global velocityY #the speed of the player dictated by input
     global keyUp #if we let go of the movement keys
     global lastDirection
+    global facingDirection
     global isMoving
     global WorldVelocityX
     global WorldVelocityY
@@ -328,11 +329,9 @@ def player(): #draws the player
     player1.updateRelative(velocityX,velocityY) #here just to keep track of the player, is basically the asme thing as worldrelative
     world.updateRelative(velocityX,velocityY) #takes in user input and moves when held
     world.update_layout(-velocityX,velocityY) #takes in user input and moves when held
-    all_sprites_list.update(-velocityX,-velocityY)#keep moving at speed until we are tile
-    
-    if (velocityX != 0) or (velocityY != 0):
-        isMoving = True
-    if ((world.getRelativeX() % TILE_SIZE) != 0 and keyUp): #if we are not on a tile and we are not holding a key, reajust to a tile
+    all_sprites_list.update(-velocityX,-velocityY)#keep moving at speed until we are tile\
+   # print(world.getRelativeX() % TILE_SIZE)
+    if ((world.getRelativeX() % TILE_SIZE) != 0 and keyUp and not keyDown): #if we are not on a tile and we are not holding a key, reajust to a tile
         isMoving = True
         velocityX = 0 #reset velocity to avoid extra inputs
         world.update_layout(-SPEED  * direction,0) #keep moving at speed until we are on a tile
@@ -340,7 +339,7 @@ def player(): #draws the player
         player1.updateRelative(SPEED * direction,0)
         all_sprites_list.update(-SPEED  * direction,0)#keep moving at speed until we are tile
         #updateEnemy(-SPEED  * direction,0)
-    elif ((world.getRelativeY() % TILE_SIZE) != 0 and keyUp): #if we are not on a tile and we are not holding a key, reajust to a tile
+    elif ((world.getRelativeY() % TILE_SIZE) != 0 and keyUp and not keyDown): #if we are not on a tile and we are not holding a key, reajust to a tile
         isMoving = True
         velocityY = 0  #reset velocity to avoid extra inputs
         world.update_layout(0,SPEED  * direction) #keep moving at speed until we are on a tile
@@ -356,11 +355,10 @@ def player(): #draws the player
                     WorldVelocityX = 0
                     #WorldVelocityY = 0
             if ((world.getRelativeY() % TILE_SIZE) == 0 and keyUp):
-                    
                     WorldVelocityY = 0
                     #WorldVelocityX = 0
                 
-        keyUp = False
+       
         direction = 0
     all_sprites_list.draw(screen)
     player1.render(screen) 
@@ -537,14 +535,14 @@ def renderMelee(list): #goal - CREATE A NEW MELEE CLASS THATS FOR MELEE, INDEPEN
             meleeInUse = False
             break
         else:
-            if (currenttick - melee.getTime()) >= 0 and (currenttick - melee.getTime()) < 250:
+            if (currenttick - melee.getTime()) >= 0 and (currenttick - melee.getTime()) < 100:
                 melee.updateWorld(-velocityX,-velocityY) #account for the world moving
                 melee.updateOrientation()
-                melee.updateForwardMovement(0.8)  #speed between 0-1
+                melee.updateForwardMovement(0.9)  #speed between 0-1
                 melee.render(screen)
                 currentItem = None
 
-            if (currenttick - melee.getTime()) >= 250 and (currenttick - melee.getTime()) < 500:
+            if (currenttick - melee.getTime()) >= 100 and (currenttick - melee.getTime()) < 200:
                 if pygame.sprite.collide_rect(melee, player1): #account for player movement
                     list.remove(melee)
                     print("removed melee")
@@ -555,7 +553,7 @@ def renderMelee(list): #goal - CREATE A NEW MELEE CLASS THATS FOR MELEE, INDEPEN
                     break
                 melee.updateWorld(-velocityX,-velocityY) #account for the world moving
                 melee.updateOrientation()
-                melee.updateBackwardMovement(0.8)
+                melee.updateBackwardMovement(0.9)
                 melee.render(screen)
                 currentItem = None
         
@@ -681,6 +679,7 @@ while running:
             running = False
         
         if event.type == pygame.KEYDOWN:
+    
             key_pressed = pygame.key.get_pressed()
             #not keydown is used to prevent strafing
             if key_pressed[K_d] and (not keyDown) and (not isMoving) and WorldVelocityX == 0: 
