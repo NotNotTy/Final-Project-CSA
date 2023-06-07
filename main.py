@@ -120,8 +120,6 @@ def startGame(): #used to start the game, also used to reset the game if the pla
         npc_sprite_list = pygame.sprite.Group()
         textbox_sprite_list = pygame.sprite.Group()
         #all_sprites_list.add(player1)
-        all_sprites_list.add(npc1,npc2)
-        npc_sprite_list.add(npc1,npc2)
         textbox_sprite_list.add(textbox1)
         velocityX = 0
         velocityY = 0
