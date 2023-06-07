@@ -230,12 +230,44 @@ def checkCollision(obj): #checks to see if theres a collision with obj and the w
                 
                 else:
                     
+                    
                     collisionKey = 0 #reset everything
                     keyDown = False
                     direction = 0
 
-    #Enemy damage code
     for index, enemy in enumerate(enemyList):
+        if pygame.sprite.collide_rect(enemy,obj):
+            if obj.getID() == "player":
+                    #invulnurbility/damage codes
+                    if player1.getInvulurbility():
+                        if (pygame.time.get_ticks() - player1.getTime()) >= 1000:  #if we have been invulnurble for 1 seconds
+                            player1.setInvulurbility(False)
+                            player1.setStartTime(0)
+
+                    if not player1.getInvulurbility():
+                        player1.updateHealth(-enemy.getDamage())
+                        player1.setInvulurbility(True)
+                        player1.setStartTime(pygame.time.get_ticks())
+                        
+        if enemy.getHealth() <= 0:
+            enemyList.remove(enemy)
+
+
+    #Enemy damage code
+ 
+
+
+def checkObjectCollision(obj):
+      global enemyList
+      list = world.getCollideableList()
+      for row in list:
+        for collideable in enumerate(row):
+            if pygame.sprite.collide_rect(obj, collideable[1]): #if anything collides with the enviromental obstacles
+                if obj.getID() == "projectile" or obj.getID() == "melee": #all objects will have a id system
+                    if collideable[1].getType() == "water":
+                        return False
+                return True
+      for index, enemy in enumerate(enemyList):
         if pygame.sprite.collide_rect(enemy,obj):
             if obj.getID() == "projectile": #if the enemy was hit by a projectile
                 if obj in projectileList:
@@ -251,32 +283,6 @@ def checkCollision(obj): #checks to see if theres a collision with obj and the w
                 if enemy.getHealth() <= 0:
                     enemyKilled = True
                     textCreation("enemy-slained")
-
-            if obj.getID() == "player":
-                #invulnurbility/damage code
-                if player1.getInvulurbility():
-                    if (pygame.time.get_ticks() - player1.getTime()) >= 1000:  #if we have been invulnurble for 1 seconds
-                        player1.setInvulurbility(False)
-                        player1.setStartTime(0)
-
-                if not player1.getInvulurbility():
-                    player1.updateHealth(-enemy.getDamage())
-                    player1.setInvulurbility(True)
-                    player1.setStartTime(pygame.time.get_ticks())
-            
-            if enemy.getHealth() <= 0:
-                enemyList.remove(enemy)
-
-
-def checkObjectCollision(obj):
-      list = world.getCollideableList()
-      for row in list:
-        for collideable in enumerate(row):
-            if pygame.sprite.collide_rect(obj, collideable[1]): #if anything collides with the enviromental obstacles
-                if obj.getID() == "projectile" or obj.getID() == "melee": #all objects will have a id system
-                    if collideable[1].getType() == "water":
-                        return False
-                return True
 
                 
         
@@ -427,7 +433,8 @@ def drawItem(item): #draws the used item and the direction it is facing in
                 projectileCreation("bow")
             if item.getID() == "firebook":
                 projectileCreation("firebook")
-        meleeCreation()
+            if item.getID() == "sword":
+                meleeCreation()
         #textCreation() Unused, might use later
 
     else:
@@ -441,6 +448,11 @@ def projectileCreation(tag): #creates the projectiles
     global currentItem
     global projectileFired
     if projectileFired: #projectiles create a another object. This code appends a projectile object to a list to be rendered
+        if inventory.getCurrentObject().getDurabilityStatus() == False:
+            inventory.removeItem(inventory.getCurrentObject())
+            currentItem = None
+        else:
+            inventory.getCurrentObject().updateDurability(-1)
         mousepos = pygame.mouse.get_pos()
         distance_x = mousepos[0] - START_COORDSX
         distance_y = mousepos[1] - START_COORDSY
@@ -470,18 +482,23 @@ def meleeCreation():
     global previousItem
     global meleeInUse
     if meleeSwung:
-        mousepos = pygame.mouse.get_pos()
-        distance_x = mousepos[0] - currentItem.getObjectX()
-        distance_y = mousepos[1] - currentItem.getObjectY()
-        #idk how this math works, stack overflow saved me
-        angle = math.atan2(distance_y, distance_x)
-        angledegree = math.degrees(angle) * -1
-        speed_x = PROJECTILE_SPEED * math.cos(angle)
-        speed_y = PROJECTILE_SPEED * math.sin(angle)
-        meleeList.append(melee(currentItem.getObjectX(),currentItem.getObjectY(),"Sprites/sword64rotated.png",TILE_SIZE,speed_x,speed_y,angledegree,"melee")) #sprite is subjected to change
-        meleeSwung = False #so it runs only once
-        meleeInUse = True
-        previousItem = currentItem
+        if inventory.getCurrentObject().getDurabilityStatus() == False:
+            inventory.removeItem(inventory.getCurrentObject())
+            currentItem = None
+        else:
+            inventory.getCurrentObject().updateDurability(-1)
+            mousepos = pygame.mouse.get_pos()
+            distance_x = mousepos[0] - currentItem.getObjectX()
+            distance_y = mousepos[1] - currentItem.getObjectY()
+            #idk how this math works, stack overflow saved me
+            angle = math.atan2(distance_y, distance_x)
+            angledegree = math.degrees(angle) * -1
+            speed_x = PROJECTILE_SPEED * math.cos(angle)
+            speed_y = PROJECTILE_SPEED * math.sin(angle)
+            meleeList.append(melee(currentItem.getObjectX(),currentItem.getObjectY(),"Sprites/sword64rotated.png",TILE_SIZE,speed_x,speed_y,angledegree,"melee")) #sprite is subjected to change
+            meleeSwung = False #so it runs only once
+            meleeInUse = True
+            previousItem = currentItem
 
 def textCreation(id):
     global showAttackWarning
@@ -509,6 +526,9 @@ def textCreation(id):
     if id == "out-of-arrows":
         textList.append(TextGenerator(player1.getRelativeX(),player1.getRelativeY() - 32, 'Out of arrows!', 'freesansbold.ttf',currentTime,"temp"))
 
+    if id == "empty-bag":
+        textList.append(TextGenerator(player1.getRelativeX(),player1.getRelativeY() - 32, 'Your bag is empty!', 'freesansbold.ttf',currentTime,"temp"))
+
 def crateCreation(num):
     global crateList
     global screen
@@ -534,7 +554,6 @@ def spawn(): #spawns enemies
                         xcoords = random.randrange(TILE_SIZE  * (-25 + -abs(get_tile_x())), TILE_SIZE  * (74 + -abs(get_tile_x())),TILE_SIZE)  #Note, the multipler MUST BE WHATEVER THE WORLD MULTIPLIER IS in World.py
                         ycoords = random.randrange(TILE_SIZE  * (-31 + -abs(get_tile_y())), TILE_SIZE  * (68 + -abs(get_tile_y())),TILE_SIZE) #Second Note, the end condition must be one less the world width subtracted by multiplier
         crateCreation(2) #create two new crates every 10 second
-        print(xcoords,ycoords,get_tile_y())
         health = random.randrange(200,500)
         damage = random.randrange(10,50)
         enemyList.append(enemy("Sprites/character64.png",health,damage,xcoords,ycoords,START_COORDSX,START_COORDSY,screen,"enemy"))
@@ -568,7 +587,6 @@ def renderMelee(list): #goal - CREATE A NEW MELEE CLASS THATS FOR MELEE, INDEPEN
         #print(currenttick - projectile.getTime())
         if (currenttick - melee.getTime()) >= 505: #end condition
             list.remove(melee)
-            print("removed melee")
             currentItem = previousItem
             melee.updateHit(False)
             previousItem = None
@@ -577,7 +595,6 @@ def renderMelee(list): #goal - CREATE A NEW MELEE CLASS THATS FOR MELEE, INDEPEN
 
         elif checkObjectCollision(melee):
             list.remove(melee)
-            print("removed melee")
             currentItem = previousItem
             melee.updateHit(False)
             previousItem = None
@@ -594,7 +611,6 @@ def renderMelee(list): #goal - CREATE A NEW MELEE CLASS THATS FOR MELEE, INDEPEN
             if (currenttick - melee.getTime()) >= 100 and (currenttick - melee.getTime()) < 200:
                 if pygame.sprite.collide_rect(melee, player1): #account for player movement
                     list.remove(melee)
-                    print("removed melee")
                     currentItem = previousItem
                     previousItem = None
                     meleeInUse = False
@@ -617,11 +633,9 @@ def renderProjectiles(list): #this renders every projectile on the list
         #print(currenttick - projectile.getTime())
         if (currenttick - projectile.getTime()) >= 5000: #if 5 seconds has passed by, since sometimes there are frame skips, cannot be ==
             list.remove(projectile)
-            print("removed")
             break
         elif checkObjectCollision(projectile):
             list.remove(projectile)
-            print("removed")
             break
         projectile.updateWorld(-velocityX,-velocityY) #account for the world moving
         projectile.update()
@@ -672,7 +686,6 @@ def renderHunger():
             player1.updateHunger(-5)
     hungerbar.update(PLAYER_STARTING_HUNGER,player1.getHunger())
     hungerbar.render(screen)
-    print(player1.getHunger())
 
 def renderCrate(list):
     global hungerspeed
@@ -702,8 +715,6 @@ def inRadius(): #if the mouse is in a certain radius of the weapon, it will fire
     if lastDirection == 1: #north
         if angledegree > -180 and angledegree < 0: #180 - 0
             return True 
-        print(lastDirection)
-        print(angledegree)
 
     if lastDirection == 2: #south
         if angledegree <= 180 and angledegree >= 0:
@@ -717,8 +728,6 @@ def inRadius(): #if the mouse is in a certain radius of the weapon, it will fire
         if angledegree < -90 or angledegree >= 90:
             return True
         
-    print(lastDirection)
-    print(angledegree)
     return False
 
 def isInteractable():
@@ -738,7 +747,6 @@ def get_tile(): #returns the coordinate position of the player
     coords = [(player1.getRelativeX() - START_COORDSX)//TILE_SIZE,(player1.getRelativeY()-START_COORDSY)//TILE_SIZE]
     #print(playerXRelative//TILE_SIZE,playerYRelative//TILE_SIZE)
     #print(playerXRelative,playerYRelative)
-    print(player1.getRelativeX())
     print(coords)
 
 def get_tile_x():
@@ -838,7 +846,7 @@ while running:
                 if inventory.getSeleciton() == None: #if there is nothing in our inventory
                     
                     emptyBag = True
-                    textCreation()
+                    textCreation("empty-bag")
                 else:
                     inventory.onEnter()
                     inventorylist = inventory.getInventoryList()
@@ -930,11 +938,9 @@ while running:
 
             #death button logic
             if event.button == 1 and endGame() == True and deathMessage.getExitRect().collidepoint(mousePos):
-                print("Exit selected")
                 running = False
 
             if event.button == 1 and endGame() == True and deathMessage.getAgainRect().collidepoint(mousePos):
-                print("play again selected")
                 startGameBool = True
 
 
@@ -985,8 +991,8 @@ while running:
         renderHealthbar() #render healthnar
         #renderHunger()
         renderText(textList)
-        renderNight()
-        #inventory logic
         if inventory.getStatus():
             inventory.render(screen)
+        renderNight()
+        #inventory logic
     pygame.display.update()

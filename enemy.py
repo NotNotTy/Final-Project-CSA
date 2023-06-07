@@ -44,7 +44,6 @@ class enemy:
         if self.percantage == 1:
             self.green = pygame.Rect(self.x,self.y + self.width,self.width,self.height )
         else:
-            print(64 * self.percantage)
             difference = self.width * self.percantage
             self.green = pygame.Rect(self.x,self.y + self.width,difference,self.height)
        
@@ -61,7 +60,7 @@ class enemy:
         return self.damage
     
     def setTrajectory(self,end,speed,objList): #draws a line, if the line collides with something, then stop
-        self.eyesightRect = pygame.draw.line(self.screen,(0,0,0),(self.x + 32,self.y + 32),(end[0] + 32,end[1] + 32),1)
+        self.eyesightRect = pygame.draw.line(self.screen,(0,0,0,255),(self.x + 32,self.y + 32),(end[0] + 32,end[1] + 32),1) #width 0 so it doesnt show up
         if self.obstacle != None:
             if not pygame.Rect.colliderect(self.obstacle.getRect(),self.eyesightRect): #if we are not colliding with the same object again
                 self.vision = 1

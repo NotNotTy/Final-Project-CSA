@@ -29,6 +29,8 @@ class Inventory:
             if self.selectionnum == -1: #if nothing is chosen, pass
                 pass
             else:
+                if self.selectionnum >= len(self.slot): #if we are out of bounds because an item at the end has been used
+                    self.selectionnum = -(1 + (self.selectionnum - len(self.slot))) #go down one from the item list
                 if self.slot[self.selectionnum]: #if one of the slots has been selected, update it to true
                     (self.slot[self.selectionnum]).updateSelection(True)
 
@@ -55,7 +57,6 @@ class Inventory:
             if self.selectionnum < -1:
                 self.selectionnum += 1
 
-            print(self.selectionnum)
             if self.selectionnum == -1: #if we have nothing selected
                 for index,slot in enumerate(self.slot):
                     slot.updateSelection(False) #have all slots be unselected
@@ -68,6 +69,7 @@ class Inventory:
         else:
             return None
     
+
     def getCurrentObject(self): #returns the selected object
         return self.slot[self.previousselection]
     
@@ -76,13 +78,16 @@ class Inventory:
         self.previousselection = self.selectionnum
 
     def updateStatus(self, bool): #runs everytime the inventory is opened
-        self.selectionnum = 0
+        self.selectionnum = self.previousselection
         for index,slot in enumerate(self.slot):
             slot.updateSelection(False)
         self.status = bool
     
     def getStatus(self):
         return self.status
+    
+    def removeItem(self, x):
+        self.slot.remove(x)
     
     def getInventoryList(self):
         return self.slot
@@ -95,21 +100,21 @@ class Inventory:
                     slot.updateAmount(1)
                     duplicate = True
             if not duplicate:
-                self.slot.append(InventorySlot("sword","Sprites/sword64.png", Item("Sprites/sword64rotated.png",64),1))
+                self.slot.append(InventorySlot("sword","Sprites/sword64.png", Item("Sprites/sword64rotated.png",64),1,30))
         elif item == "bow":
             for index, slot in enumerate(self.slot): #checking for duplicate
                 if slot.getID() == "bow":
                     slot.updateAmount(1)
                     duplicate = True
             if not duplicate:
-                 self.slot.append(InventorySlot("bow","Sprites/bow64.png",Item("Sprites/bow64rotated.png",64),1))
+                 self.slot.append(InventorySlot("bow","Sprites/bow64.png",Item("Sprites/bow64rotated.png",64),1,50))
         elif item == "arrow":
             for index, slot in enumerate(self.slot): #checking for duplicate
                 if slot.getID() == "arrow":
                     slot.updateAmount(10)
                     duplicate = True
             if not duplicate:
-                 self.slot.append(InventorySlot("arrow","Sprites/arrow64.png",Item("Sprites/arrow64.png",64),10))
+                 self.slot.append(InventorySlot("arrow","Sprites/arrow64.png",Item("Sprites/arrow64.png",64),10,50))
 
         elif item == "bandage":
             for index, slot in enumerate(self.slot): #checking for duplicate
@@ -117,14 +122,14 @@ class Inventory:
                     slot.updateAmount(1)
                     duplicate = True
             if not duplicate:
-                 self.slot.append(InventorySlot("bandage","Sprites/bandage.png",Item("Sprites/bandage.png",64),1))
+                 self.slot.append(InventorySlot("bandage","Sprites/bandage.png",Item("Sprites/bandage.png",64),1,200))
         elif item == "firebook":
             for index, slot in enumerate(self.slot): #checking for duplicate
                 if slot.getID() == "firebook":
                     slot.updateAmount(1)
                     duplicate = True
             if not duplicate:
-                 self.slot.append(InventorySlot("firebook","Sprites/firebook.png",Item("Sprites/firebook.png",64),1))
+                 self.slot.append(InventorySlot("firebook","Sprites/firebook.png",Item("Sprites/firebook.png",64),1,30))
 
     def reset(self):
         self.slot = []
