@@ -59,6 +59,7 @@ class crate(pygame.sprite.Sprite):
             inventory.addItem("sword")
         if num == 1:
             inventory.addItem("bow")
+            inventory.addItem("arrow")
         if num == 2:
             inventory.addItem("bandage")
         if num == 3:

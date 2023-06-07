@@ -22,7 +22,7 @@ class Inventory:
         for index,slot in enumerate(self.slot): #if we run out of an item, remove it
             if slot.getAmount() <= 0:
                 self.slot.remove(slot)
-                self.selectionnum -= 1
+                self.selectionnum == 0
 
 
         if len(self.slot) != 0:  #if there is something in our inventory
@@ -70,6 +70,7 @@ class Inventory:
     
     def getCurrentObject(self): #returns the selected object
         return self.slot[self.previousselection]
+    
 
     def onEnter(self): #once something has been selected
         self.previousselection = self.selectionnum
@@ -102,6 +103,14 @@ class Inventory:
                     duplicate = True
             if not duplicate:
                  self.slot.append(InventorySlot("bow","Sprites/bow64.png",Item("Sprites/bow64rotated.png",64),1))
+        elif item == "arrow":
+            for index, slot in enumerate(self.slot): #checking for duplicate
+                if slot.getID() == "arrow":
+                    slot.updateAmount(10)
+                    duplicate = True
+            if not duplicate:
+                 self.slot.append(InventorySlot("arrow","Sprites/arrow64.png",Item("Sprites/arrow64.png",64),10))
+
         elif item == "bandage":
             for index, slot in enumerate(self.slot): #checking for duplicate
                 if slot.getID() == "bandage":

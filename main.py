@@ -233,10 +233,7 @@ def checkCollision(obj): #checks to see if theres a collision with obj and the w
                     collisionKey = 0 #reset everything
                     keyDown = False
                     direction = 0
-                    if obj.getID() == "projectile" or obj.getID() == "melee": #all objects will have a id system
-                        if collideable[1].getType() == "water":
-                            return False
-                        return True
+
     #Enemy damage code
     for index, enemy in enumerate(enemyList):
         if pygame.sprite.collide_rect(enemy,obj):
@@ -269,6 +266,18 @@ def checkCollision(obj): #checks to see if theres a collision with obj and the w
             
             if enemy.getHealth() <= 0:
                 enemyList.remove(enemy)
+
+
+def checkObjectCollision(obj):
+      list = world.getCollideableList()
+      for row in list:
+        for collideable in enumerate(row):
+            if pygame.sprite.collide_rect(obj, collideable[1]): #if anything collides with the enviromental obstacles
+                if obj.getID() == "projectile" or obj.getID() == "melee": #all objects will have a id system
+                    if collideable[1].getType() == "water":
+                        return False
+                return True
+
                 
         
 
@@ -441,9 +450,16 @@ def projectileCreation(tag): #creates the projectiles
         speed_x = PROJECTILE_SPEED * math.cos(angle)
         speed_y = PROJECTILE_SPEED * math.sin(angle)
         if tag == "bow":
-            projectileList.append(projectile(START_COORDSX,START_COORDSY,"Sprites/arrow64.png",30,speed_x,speed_y,angledegree,"projectile")) #sprite is subjected to change
+            foundArrow = False
+            for index, item in enumerate(inventory.getInventoryList()):
+                if item.getID() == "arrow": #if we are capable of getting the item, that means there is atleast 1 or more arrow
+                    item.updateAmount(-1)
+                    foundArrow = True
+                    projectileList.append(projectile(START_COORDSX,START_COORDSY,"Sprites/arrow64.png",65,speed_x,speed_y,angledegree,"projectile")) #sprite is subjected to change
+            if not foundArrow:
+                textCreation("out-of-arrows")
         if tag == "firebook":
-            projectileList.append(projectile(START_COORDSX,START_COORDSY,"Sprites/fireball.png",45,speed_x,speed_y,angledegree,"projectile")) #sprite is subjected to change
+            projectileList.append(projectile(START_COORDSX,START_COORDSY,"Sprites/fireball.png",20,speed_x,speed_y,angledegree,"projectile")) #sprite is subjected to change
         projectileFired = False #so it runs only once
 
 def meleeCreation():
@@ -489,6 +505,9 @@ def textCreation(id):
     if emptyBag and not NPCRadius and not crateRadius:
         textList.append(TextGenerator(player1.getRelativeX(),player1.getRelativeY() - 32, 'Your bag is empty!', 'freesansbold.ttf',currentTime,"temp"))
         emptyBag = False
+
+    if id == "out-of-arrows":
+        textList.append(TextGenerator(player1.getRelativeX(),player1.getRelativeY() - 32, 'Out of arrows!', 'freesansbold.ttf',currentTime,"temp"))
 
 def crateCreation(num):
     global crateList
@@ -556,7 +575,7 @@ def renderMelee(list): #goal - CREATE A NEW MELEE CLASS THATS FOR MELEE, INDEPEN
             meleeInUse = False
             break
 
-        elif checkCollision(melee):
+        elif checkObjectCollision(melee):
             list.remove(melee)
             print("removed melee")
             currentItem = previousItem
@@ -600,7 +619,7 @@ def renderProjectiles(list): #this renders every projectile on the list
             list.remove(projectile)
             print("removed")
             break
-        elif checkCollision(projectile):
+        elif checkObjectCollision(projectile):
             list.remove(projectile)
             print("removed")
             break
@@ -764,7 +783,7 @@ while running:
                 get_tile()
              
 
-            if key_pressed[K_a] and (not keyDown)and (not isMoving) and WorldVelocityX == 0:
+            elif key_pressed[K_a] and (not keyDown)and (not isMoving) and WorldVelocityX == 0:
                 isMoving = True
                 velocityX = -4
                 WorldVelocityX = -4
@@ -776,7 +795,7 @@ while running:
                 collisionKey = 2
                 get_tile()
 
-            if key_pressed[K_w] and (not keyDown)and (not isMoving)and WorldVelocityY == 0:
+            elif key_pressed[K_w] and (not keyDown)and (not isMoving)and WorldVelocityY == 0:
                 isMoving = True
                 velocityY = -4
                 WorldVelocityY = -4
@@ -788,7 +807,7 @@ while running:
                 collisionKey = 3
                 get_tile()
 
-            if key_pressed[K_s] and (not keyDown) and (not isMoving)and WorldVelocityY == 0:
+            elif key_pressed[K_s] and (not keyDown) and (not isMoving)and WorldVelocityY == 0:
                 isMoving = True
                 velocityY = 4
                 WorldVelocityY = 4
@@ -850,6 +869,42 @@ while running:
                      currentItem = item
                      itemUse = True
 
+            
+
+        elif event.type == pygame.KEYUP:
+            key_pressed = pygame.key.get_pressed()
+            if event.key == K_d:
+                 velocityX = 0
+                 direction = 1
+                 keyUp = True
+                 keyDown = False
+                 #key_d = False
+                 #onTile(1)
+                 #collision()
+
+            elif event.key == K_a:
+                 velocityX = 0
+                 direction = -1
+                 keyUp = True
+                 keyDown = False
+                 #onTile(-1)
+                 #collision()
+
+            elif event.key == K_w:
+                 velocityY = 0
+                 direction = -1
+                 keyUp = True
+                 keyDown = False
+                 #onTile(-1)
+                 #collision()
+
+            elif event.key == K_s:
+                 velocityY = 0
+                 direction = 1
+                 keyUp = True
+                 keyDown = False
+                 #onTile(1)
+
         elif event.type == pygame.MOUSEBUTTONDOWN and not startGameBool: #1 -left click, #2 - right click
             mousePos = pygame.mouse.get_pos()
          
@@ -882,41 +937,6 @@ while running:
                 print("play again selected")
                 startGameBool = True
 
-            
-
-        elif event.type == pygame.KEYUP:
-            key_pressed = pygame.key.get_pressed()
-            if event.key == K_d:
-                 velocityX = 0
-                 direction = 1
-                 keyUp = True
-                 keyDown = False
-                 #key_d = False
-                 #onTile(1)
-                 #collision()
-
-            if event.key == K_a:
-                 velocityX = 0
-                 direction = -1
-                 keyUp = True
-                 keyDown = False
-                 #onTile(-1)
-                 #collision()
-
-            if event.key == K_w:
-                 velocityY = 0
-                 direction = -1
-                 keyUp = True
-                 keyDown = False
-                 #onTile(-1)
-                 #collision()
-
-            if event.key == K_s:
-                 velocityY = 0
-                 direction = 1
-                 keyUp = True
-                 keyDown = False
-                 #onTile(1)
 
  
 

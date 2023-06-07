@@ -20,11 +20,10 @@ class nighttime:
 
     def render(self,display):
         if self.starttime != None:
-            if 0 <= (pygame.time.get_ticks() - self.starttime) <= 15: 
-
+            if 0 <= (pygame.time.get_ticks() - self.starttime) <= 12: 
                 self.startnight = True
 
-            elif pygame.time.get_ticks() - self.starttime >= 500000:
+            elif pygame.time.get_ticks() - self.starttime >= 30000:
                 self.startnight = False
 
         if self.startnight == True and self.night == True:
