@@ -109,6 +109,13 @@ class Inventory:
                     duplicate = True
             if not duplicate:
                  self.slot.append(InventorySlot("bandage","Sprites/bandage.png",Item("Sprites/bandage.png",64),1))
+        elif item == "firebook":
+            for index, slot in enumerate(self.slot): #checking for duplicate
+                if slot.getID() == "firebook":
+                    slot.updateAmount(1)
+                    duplicate = True
+            if not duplicate:
+                 self.slot.append(InventorySlot("firebook","Sprites/firebook.png",Item("Sprites/firebook.png",64),1))
 
     def reset(self):
         self.slot = []

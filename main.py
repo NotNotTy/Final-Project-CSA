@@ -17,6 +17,7 @@ from fractions import Fraction
 from healthbar import healthbar
 from deathScreen import deathScreen
 from hunger import hunger
+from nighttime import nighttime
 from crate import crate
 pygame.init()
 pygame.font.init()
@@ -49,10 +50,10 @@ player1 = None
 npc1 = None
 npc2 = None
 textbox1 = None
+night = None
 text = TextGenerator(START_COORDSX,START_COORDSY - 64,'press E to interact','freesansbold.ttf',pygame.time.get_ticks(),"radius") #temp is when it'll disappear after blank time, radius will show if in range
 deathMessage = deathScreen("Sprites/playagain.png","Sprites/exit.png","Sprites/deathScreen.png")
 hungerbar = None
-testenemy = None
 healthbarIcon = None
 inventory = Inventory()
 all_sprites_list = None
@@ -86,7 +87,6 @@ meleeList = []
 enemyList = []
 textList = []
 crateList = []
-enemyList.append(testenemy)
 #all of the below is used as conditionals to show text
 enemyKilled = False
 emptyBag = False
@@ -105,7 +105,7 @@ startGameBool = True
 def startGame(): #used to start the game, also used to reset the game if the player dies. This assigns properties to all the variables needed
     global startGameBool
     if startGameBool:
-        global player1,npc1,npc2,world,healthbarIcon,all_sprites_list,npc_sprite_list,projectileList,meleeList,enemyList,textbox1,textbox_sprite_list,textList,crateList
+        global player1,npc1,npc2,world,healthbarIcon,all_sprites_list,npc_sprite_list,projectileList,meleeList,enemyList,textbox1,textbox_sprite_list,textList,crateList,night
         global velocityX,velocityY,isMoving,WorldVelocityX,WorldVelocityY,direction,lastDirection,facingDirection,showInteraction,NPCRadius,crateRadius,emptyBag,hungerbar,hungerspeed
         global keyUp, collisionKey,projectileFired,meleeSwung,meleeInUse,showAttackWarning,keyDown,itemUse,previousItem,collisionDetected,running,change,currentItem,enemyKilled
         world = world_creator(data,screen,START_COORDSX,START_COORDSY) #generates the world 
@@ -113,9 +113,9 @@ def startGame(): #used to start the game, also used to reset the game if the pla
         npc1 = NPC(TILE_SIZE,NPC_STARTCOORDSX,NPC_STARTCOORDSY,npcImg,'npc',False)
         npc2 = NPC(TILE_SIZE,NPC_STARTCOORDSX + 128,NPC_STARTCOORDSY,npcImg,'npc',False)
         textbox1 = textbox(TILE_SIZE,(LENGTH/2) - (384/2),player1.getY() + 7 * TILE_SIZE,textboxImg,'textbox',False)
-        testenemy = enemy("Sprites/character64.png",200,20,START_COORDSX + 640,START_COORDSY + 640,START_COORDSX,START_COORDSY,screen,"enemy")
         healthbarIcon = healthbar("Sprites/hpbar.png",LENGTH - (TILE_SIZE * 5),WIDTH - TILE_SIZE/2,TILE_SIZE * 5, TILE_SIZE/2) #currently the bar is (64*5,32)
         hungerbar = hunger("Sprites/hpbar.png",LENGTH - (TILE_SIZE * 5),WIDTH - (TILE_SIZE/2 * 2),TILE_SIZE * 4,TILE_SIZE/2)
+        night = nighttime()
         all_sprites_list = pygame.sprite.Group()
         npc_sprite_list = pygame.sprite.Group()
         textbox_sprite_list = pygame.sprite.Group()
@@ -155,7 +155,6 @@ def startGame(): #used to start the game, also used to reset the game if the pla
         NPCRadius = False #if we are in range of an NPC
         crateRadius = False #if we are in range of a crate
         emptyBag = False
-        enemyList.append(testenemy)
         inventory.reset()
         startGameBool = False
 
@@ -235,6 +234,8 @@ def checkCollision(obj): #checks to see if theres a collision with obj and the w
                     keyDown = False
                     direction = 0
                     if obj.getID() == "projectile" or obj.getID() == "melee": #all objects will have a id system
+                        if collideable[1].getType() == "water":
+                            return False
                         return True
     #Enemy damage code
     for index, enemy in enumerate(enemyList):
@@ -245,14 +246,14 @@ def checkCollision(obj): #checks to see if theres a collision with obj and the w
                 enemy.updateHealth(-obj.getDamage()) #update enemy health
                 if enemy.getHealth() <= 0: #if the health is less than 0, display a kill message
                     enemyKilled = True
-                    textCreation()
+                    textCreation("enemy-slained")
 
             if obj.getID() == "melee" and obj.getHit() == False:
                 enemy.updateHealth(-obj.getDamage())
                 obj.updateHit(True)
                 if enemy.getHealth() <= 0:
                     enemyKilled = True
-                    textCreation()
+                    textCreation("enemy-slained")
 
             if obj.getID() == "player":
                 #invulnurbility/damage code
@@ -293,7 +294,7 @@ def interactable(): #loops through every collideable object
                 pass
             else:
                 showInteraction = True
-                textCreation()
+                textCreation("range")
             npc.editRange(True)
             #print(row[1].getRange())
          else:
@@ -311,7 +312,7 @@ def interactable(): #loops through every collideable object
                 pass
             else:
                 showInteraction = True
-                textCreation()
+                textCreation("range")
             crate.editRange(True)
         else:
             if crate.getRange() == True:
@@ -412,7 +413,11 @@ def drawItem(item): #draws the used item and the direction it is facing in
              else:
                  (item.getObject()).changeOrientation(45)
     if itemUse:
-        projectileCreation()
+        if item != None:
+            if item.getID() == "bow":
+                projectileCreation("bow")
+            if item.getID() == "firebook":
+                projectileCreation("firebook")
         meleeCreation()
         #textCreation() Unused, might use later
 
@@ -421,7 +426,7 @@ def drawItem(item): #draws the used item and the direction it is facing in
         currentItem = None
         itemUse = False
 #-------------------------------------------------------CREATION SECTION---------------------------------------------------------------#
-def projectileCreation(): #creates the projectiles
+def projectileCreation(tag): #creates the projectiles
     global projectileList
     global itemUse
     global currentItem
@@ -435,7 +440,10 @@ def projectileCreation(): #creates the projectiles
         angledegree = math.degrees(angle) * -1
         speed_x = PROJECTILE_SPEED * math.cos(angle)
         speed_y = PROJECTILE_SPEED * math.sin(angle)
-        projectileList.append(projectile(START_COORDSX,START_COORDSY,"Sprites/arrow64.png",64,speed_x,speed_y,angledegree,"projectile")) #sprite is subjected to change
+        if tag == "bow":
+            projectileList.append(projectile(START_COORDSX,START_COORDSY,"Sprites/arrow64.png",30,speed_x,speed_y,angledegree,"projectile")) #sprite is subjected to change
+        if tag == "firebook":
+            projectileList.append(projectile(START_COORDSX,START_COORDSY,"Sprites/fireball.png",45,speed_x,speed_y,angledegree,"projectile")) #sprite is subjected to change
         projectileFired = False #so it runs only once
 
 def meleeCreation():
@@ -459,7 +467,7 @@ def meleeCreation():
         meleeInUse = True
         previousItem = currentItem
 
-def textCreation():
+def textCreation(id):
     global showAttackWarning
     global textList
     global enemyKilled
@@ -467,15 +475,17 @@ def textCreation():
     global crateRadius
     global emptyBag
     currentTime = pygame.time.get_ticks()
-    if showInteraction:
+    if id == "range":
         textList.append(TextGenerator(player1.getRelativeX(),player1.getRelativeY() - 32,'press E to interact','freesansbold.ttf',currentTime,"radius"))
         showInteraction = False
-    if showAttackWarning and not NPCRadius and not crateRadius:
+    if id == "range" and not NPCRadius and not crateRadius:
         textList.append(TextGenerator(player1.getRelativeX(),player1.getRelativeY() - 32, 'You cannot use your weapon behind you!', 'freesansbold.ttf',currentTime,"temp"))
         showAttackWarning = False
-    if enemyKilled and not NPCRadius and not crateRadius:
+    if id == "enemy-slained" and not NPCRadius and not crateRadius:
         textList.append(TextGenerator(player1.getRelativeX(),player1.getRelativeY() - 32, 'You have killed an enemy!', 'freesansbold.ttf',currentTime,"temp"))
         enemyKilled = False
+    if id == "warning" and not NPCRadius and not crateRadius:
+        textList.append(TextGenerator(player1.getRelativeX(),player1.getRelativeY() - 32, 'Halfway there!', 'freesansbold.ttf',currentTime,"temp"))
     if emptyBag and not NPCRadius and not crateRadius:
         textList.append(TextGenerator(player1.getRelativeX(),player1.getRelativeY() - 32, 'Your bag is empty!', 'freesansbold.ttf',currentTime,"temp"))
         emptyBag = False
@@ -485,25 +495,31 @@ def crateCreation(num):
     global screen
 
     for i in range(num):
-        x_coords = random.randrange( TILE_SIZE* -26,(99 - 26) * TILE_SIZE,TILE_SIZE) #Note, the multipler MUST BE WHATEVER THE WORLD MULTIPLIER IS in World.py
-        y_coords = random.randrange(TILE_SIZE -26, (99 - 26) * TILE_SIZE,TILE_SIZE) #Second Note, the end condition must be one less the world width subtracted by multiplier
+        x_coords = random.randrange(TILE_SIZE  * (-25 + -abs(get_tile_x())), TILE_SIZE  * (74 + -abs(get_tile_x())),TILE_SIZE)#Note, the multipler MUST BE WHATEVER THE WORLD MULTIPLIER IS in World.py
+        y_coords = random.randrange(TILE_SIZE  * (-31 + -abs(get_tile_y())), TILE_SIZE  * (68 + -abs(get_tile_y())),TILE_SIZE) #Second Note, the end condition must be one less the world width subtracted by multiplier
         crateList.append(crate("Sprites/crate32.png",x_coords + 16,y_coords + 16,"crate",False)) #add 16 to center the smaller crate
 
-def spawn(): #spawns some stuff
+def spawn(): #spawns enemies
     global enemyList
     global world
+    global night
     list = world.getCollideableList()
-    num = random.randrange(1,5) #chooses a random number of enemy to spawn
-    for row in list:
-        xcoords = random.randrange(TILE_SIZE* -26,(99 - 40) * TILE_SIZE,TILE_SIZE)
-        ycoords = random.randrange(TILE_SIZE -26, (99 - 36) * TILE_SIZE,TILE_SIZE)
-        for collidable in enumerate(row):
-            if set(collidable[1].get_coords()) & set([xcoords,ycoords]):
-                while collidable[1].get_coords() == [xcoords,ycoords]:
-                    xcoords = random.randrange(TILE_SIZE* -26,(99 - 40) * TILE_SIZE,TILE_SIZE)  #Note, the multipler MUST BE WHATEVER THE WORLD MULTIPLIER IS in World.py
-                    ycoords = random.randrange(TILE_SIZE -26, (99 - 36) * TILE_SIZE,TILE_SIZE) #Second Note, the end condition must be one less the world width subtracted by multiplier
-    crateCreation(2) #create two new crates every 10 second
-    enemyList.append(enemy("Sprites/character64.png",200,20,xcoords,ycoords,START_COORDSX,START_COORDSY,screen,"enemy"))
+    if night.getNightStatus():
+        for row in list:
+            #TILE_SIZE  * (-31 + -abs(get_tile_y())) + (TILE_SIZE * -27)
+            xcoords = random.randrange(TILE_SIZE  * (-25 + -abs(get_tile_x())), TILE_SIZE  * (74 + -abs(get_tile_x())),TILE_SIZE)
+            ycoords = random.randrange(TILE_SIZE  * (-31 + -abs(get_tile_y())), TILE_SIZE  * (68 + -abs(get_tile_y())),TILE_SIZE)
+            for collidable in enumerate(row):
+                if set(collidable[1].get_coords()) & set([xcoords,ycoords]):
+                    while collidable[1].get_coords() == [xcoords,ycoords]:
+                        xcoords = random.randrange(TILE_SIZE  * (-25 + -abs(get_tile_x())), TILE_SIZE  * (74 + -abs(get_tile_x())),TILE_SIZE)  #Note, the multipler MUST BE WHATEVER THE WORLD MULTIPLIER IS in World.py
+                        ycoords = random.randrange(TILE_SIZE  * (-31 + -abs(get_tile_y())), TILE_SIZE  * (68 + -abs(get_tile_y())),TILE_SIZE) #Second Note, the end condition must be one less the world width subtracted by multiplier
+        crateCreation(2) #create two new crates every 10 second
+        print(xcoords,ycoords,get_tile_y())
+        health = random.randrange(200,500)
+        damage = random.randrange(10,50)
+        enemyList.append(enemy("Sprites/character64.png",health,damage,xcoords,ycoords,START_COORDSX,START_COORDSY,screen,"enemy"))
+
 #----------------------------------------------------------------------------------------------------------------------#
 
 
@@ -647,7 +663,14 @@ def renderCrate(list):
         crate.update(-WorldVelocityX * hungerspeed,-WorldVelocityY * hungerspeed)
         crate.render(screen)
         
-
+def renderNight():
+    global night
+    global enemyList
+    if night.getNightStatus() == False:
+        if  0 <= (pygame.time.get_ticks() % 30000) <= 15: #every 3 minutes
+            night.setNight(True,pygame.time.get_ticks())
+            enemyList.clear()
+    night.render(screen)
 #----------------------------------------------------------------------------------------------------------------------------------------#
 def inRadius(): #if the mouse is in a certain radius of the weapon, it will fire
     mousepos = pygame.mouse.get_pos()
@@ -699,6 +722,12 @@ def get_tile(): #returns the coordinate position of the player
     print(player1.getRelativeX())
     print(coords)
 
+def get_tile_x():
+    return (player1.getRelativeX() - START_COORDSX)//TILE_SIZE
+ 
+def get_tile_y():
+    return (player1.getRelativeY()-START_COORDSY)//TILE_SIZE
+
 
 
             
@@ -709,8 +738,11 @@ while running:
     clock.tick(60)
     #screen.fill((0,0,0))
     #print(pygame.time.get_ticks() % 10000)
+    
     if (pygame.time.get_ticks() % 10000 >= 0)and (pygame.time.get_ticks() % 10000 <= 20): #for every 10 seconds, spawn an enemy
-        spawn()
+        num = random.randrange(1,10) #chooses a random number of enemy to spawn
+        for i in range(num):
+            spawn()
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
@@ -821,16 +853,17 @@ while running:
         elif event.type == pygame.MOUSEBUTTONDOWN and not startGameBool: #1 -left click, #2 - right click
             mousePos = pygame.mouse.get_pos()
          
-            #print(inventory.getCurrentObject().getID())
-            if event.button == 1 and itemUse and inventory.getCurrentObject().getID() == "bow":
-                projectileFired = True
-            if event.button == 1 and itemUse and inventory.getCurrentObject().getID() == "sword" and not meleeInUse: #segment used to render melee attacks
-                if inRadius(): #if we are aiming infront of us 
-                    meleeSwung = True
-                    showAttackWarning = False
-                else:
-                    showAttackWarning = True
-                    textCreation()
+            #print(inventory.getCurrentObject().dgetID())
+            if currentItem != None:
+                if event.button == 1 and itemUse and currentItem != None and inventory.getCurrentObject().getID() == "bow" or inventory.getCurrentObject().getID() == "firebook":
+                    projectileFired = True
+                if event.button == 1 and itemUse and currentItem != None and inventory.getCurrentObject().getID() == "sword" and not meleeInUse: #segment used to render melee attacks
+                    if inRadius(): #if we are aiming infront of us 
+                        meleeSwung = True
+                        showAttackWarning = False
+                    else:
+                        showAttackWarning = True
+                        textCreation("range")
 
             if event.button == 1 and currentItem != None and currentItem.getID() == "bandage":
                 player1.updateHealth(20)
@@ -930,8 +963,9 @@ while running:
         renderProjectiles(projectileList) #render projectile
         renderMelee(meleeList) #render melee
         renderHealthbar() #render healthnar
-        renderHunger()
+        #renderHunger()
         renderText(textList)
+        renderNight()
         #inventory logic
         if inventory.getStatus():
             inventory.render(screen)

@@ -15,6 +15,9 @@ class world_creator: #constructs the world
         sand_layout = import_cvs_layout(world_type['sand'])
         self.sand_layout_sprite = self.create_tile_group(sand_layout,'sand')
 
+        snow_layout = import_cvs_layout(world_type['snow'])
+        self.snow_layout_sprite = self.create_tile_group(snow_layout,'snow')
+
         water_layout = import_cvs_layout(world_type['water'])
         self.water_layout_sprite = self.create_tile_group(water_layout,'water')
 
@@ -27,9 +30,17 @@ class world_creator: #constructs the world
         wood_plank_layout = import_cvs_layout(world_type['wood_plank'])
         self.wood_plank_layout_sprite = self.create_tile_group(wood_plank_layout,'wood_plank')
 
+        grass_weed_layout = import_cvs_layout(world_type['grass_weed'])
+        self.grass_weed_layout_sprite = self.create_tile_group(grass_weed_layout,'grass_weed')
 
-        self.objectList = [self.plain_layout_sprite,self.rock_layout_sprite,self.sand_layout_sprite,self.water_layout_sprite,self.cactus_layout_sprite,self.tree_layout_sprite,self.wood_plank_layout_sprite]
-        self.collideable = [self.rock_layout_sprite,self.water_layout_sprite,self.tree_layout_sprite]
+        ice_spike_layout = import_cvs_layout(world_type['ice_spike'])
+        self.ice_spike_layout_sprite = self.create_tile_group(ice_spike_layout,'ice_spike')
+
+
+
+
+        self.objectList = [self.plain_layout_sprite,self.rock_layout_sprite,self.sand_layout_sprite,self.water_layout_sprite,self.snow_layout_sprite,self.wood_plank_layout_sprite,self.cactus_layout_sprite,self.tree_layout_sprite,self.ice_spike_layout_sprite,self.grass_weed_layout_sprite]
+        self.collideable = [self.rock_layout_sprite,self.water_layout_sprite,self.tree_layout_sprite,self.ice_spike_layout_sprite]
         self.relativePositionX = x
         self.relativePositionY = y
 
@@ -51,7 +62,7 @@ class world_creator: #constructs the world
                        sprite_group.add(sprite)
 
                     if t == 'water':
-                       randomnum = random.randint(0,3)
+                       randomnum = random.randint(0,2)
                        if randomnum == 0: texture = pygame.image.load('Sprites/water1.png').convert_alpha()
                        elif randomnum == 1: texture = pygame.image.load('Sprites/water2.png').convert_alpha()
                        else: texture = pygame.image.load('Sprites/water3.png').convert_alpha()
@@ -82,11 +93,29 @@ class world_creator: #constructs the world
                        sprite = StaticTile(TILE_SIZE,TILE_SIZE,x,y,texture,'sand', (x-576)//TILE_SIZE,(y-320)//TILE_SIZE)
                        sprite_group.add(sprite)
 
+                    if t == 'snow':
+                        randomnum = random.randint(0,2)
+                        if randomnum == 1: texture = pygame.image.load('Sprites/snow1.png').convert()
+                        else: texture = pygame.image.load('Sprites/snow2.png').convert()
+                        sprite = StaticTile(TILE_SIZE,TILE_SIZE,x,y,texture,'snow', (x-576)//TILE_SIZE,(y-320)//TILE_SIZE)
+                        sprite_group.add(sprite)
+
+                    if t == 'ice_spike':
+                        texture = pygame.image.load('Sprites/iceSpike.png').convert_alpha()
+                        sprite = StaticTile(TILE_SIZE,TILE_SIZE,x,y,texture,'ice_spike', (x-576)//TILE_SIZE,(y-320)//TILE_SIZE)
+                        sprite_group.add(sprite)
+
                     if t == 'cactus':
                        texture = pygame.image.load('Sprites/cactus1.png').convert_alpha()
                        sprite = StaticTile(TILE_SIZE,TILE_SIZE,x,y,texture,'cactus', (x-576)//TILE_SIZE,(y-320)//TILE_SIZE)
                        sprite_group.add(sprite)
 
+                    if t == "grass_weed":
+                        randomnum = random.randint(0,1)
+                        if randomnum == 1: texture = pygame.image.load('Sprites/grassweed.png').convert_alpha()
+                        else: texture = pygame.image.load('Sprites/grassweed2.png').convert_alpha()
+                        sprite = StaticTile(TILE_SIZE,TILE_SIZE,x,y,texture,'grass_weed', (x-576)//TILE_SIZE,(y-320)//TILE_SIZE)
+                        sprite_group.add(sprite)
 
                     if t == 'tree':
                        texture = pygame.image.load('Sprites/tree1.png').convert_alpha()

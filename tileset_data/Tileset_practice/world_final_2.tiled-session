@@ -56,6 +56,12 @@
             "scaleInDock": 1,
             "scaleInEditor": 1
         },
+        "Grassweed.tsx": {
+            "dynamicWrapping": false
+        },
+        "Icespike.tsx": {
+            "dynamicWrapping": false
+        },
         "Rock.tsx": {
             "dynamicWrapping": false,
             "scaleInDock": 1,
@@ -100,16 +106,16 @@
             "scale": 0.1669921875,
             "selectedLayer": 0,
             "viewCenter": {
-                "x": 2557.0058479532163,
-                "y": 3089.9649122807014
+                "x": 2164.771929824561,
+                "y": 1709.6608187134502
             }
         },
         "world_test.tmx": {
             "scale": 0.125,
             "selectedLayer": 1,
             "viewCenter": {
-                "x": 1712,
-                "y": 3352
+                "x": 3196,
+                "y": 3196
             }
         }
     },

@@ -53,7 +53,7 @@ class crate(pygame.sprite.Sprite):
         return self.y
     
     def loot(self,inventory):
-        num = random.randrange(0,3) #however many items. the end condiiton is not inclusive
+        num = random.randrange(0,4) #however many items. the end condiiton is not inclusive
         print(num)
         if num == 0:
             inventory.addItem("sword")
@@ -61,5 +61,7 @@ class crate(pygame.sprite.Sprite):
             inventory.addItem("bow")
         if num == 2:
             inventory.addItem("bandage")
+        if num == 3:
+            inventory.addItem("firebook")
 
     
