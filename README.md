@@ -1,2 +1,3 @@
 # Final-Project-CSA
-Development by Tyler Thach and George Filippov
+Development by George Filippov and Tyler Thach
+
